@@ -1,0 +1,55 @@
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    nickname VARCHAR(100) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS restaurants (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    kakao_place_id VARCHAR(100) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    address VARCHAR(255),
+    category VARCHAR(100),
+    lat DOUBLE,
+    lng DOUBLE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS reviews (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    restaurant_id BIGINT NOT NULL,
+    rating TINYINT NOT NULL,
+    content TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS review_images (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    review_id BIGINT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS likes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    restaurant_id BIGINT NOT NULL,
+    UNIQUE KEY uq_likes (user_id, restaurant_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS bookmarks (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    restaurant_id BIGINT NOT NULL,
+    UNIQUE KEY uq_bookmarks (user_id, restaurant_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE
+);
