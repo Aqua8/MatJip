@@ -50,94 +50,128 @@ export default function RestaurantDetail() {
     ? (reviewList.reduce((s, r) => s + r.rating, 0) / reviewList.length).toFixed(1)
     : null;
 
-  if (!restaurant) return <div className="p-8 text-gray-400 text-center">불러오는 중...</div>;
+  if (!restaurant) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-xs text-gray-400">불러오는 중...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <button onClick={() => navigate(-1)} className="text-sm text-gray-400 hover:text-gray-700 mb-6">← 뒤로</button>
-
-      {/* 기본 정보 */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm mb-4">
-        <div className="flex justify-between items-start mb-2">
-          <h1 className="text-2xl font-bold text-gray-900">{restaurant.name}</h1>
-          <span className="text-sm text-gray-400 bg-gray-50 px-3 py-1 rounded-full">{restaurant.category}</span>
-        </div>
-        <p className="text-gray-500 text-sm mb-4">{restaurant.address}</p>
-
-        <div className="flex items-center gap-3">
+    <div className="h-full overflow-y-auto bg-white">
+      {/* 헤더 */}
+      <div className="border-b border-gray-200 px-8 pt-8 pb-7">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-xs text-gray-400 hover:text-black transition-colors mb-6 flex items-center gap-1.5"
+        >
+          ← 뒤로
+        </button>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-baseline gap-2 mb-1.5">
+              <h1 className="text-xl font-bold text-black">{restaurant.name}</h1>
+              <span className="text-sm text-gray-400">/{restaurant.category}</span>
+            </div>
+            <p className="text-sm text-gray-400">{restaurant.address}</p>
+          </div>
           {avgRating && (
-            <div className="flex items-center gap-1.5">
-              <StarRating value={Math.round(avgRating)} />
-              <span className="text-sm font-semibold text-gray-700">{avgRating}</span>
-              <span className="text-xs text-gray-400">({reviewList.length}개)</span>
+            <div className="flex flex-col items-end flex-shrink-0">
+              <span className="text-2xl font-bold text-black">{avgRating}</span>
+              <span className="text-xs text-gray-400 mt-0.5">{reviewList.length}개 리뷰</span>
             </div>
           )}
-        </div>
-
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={handleLike}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm transition-colors ${
-              liked ? 'bg-red-50 border-red-200 text-red-500' : 'border-gray-200 text-gray-500 hover:border-gray-400'
-            }`}
-          >
-            ♥ {likeCount}
-          </button>
-          <button
-            onClick={handleBookmark}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm transition-colors ${
-              bookmarked ? 'bg-yellow-50 border-yellow-200 text-yellow-600' : 'border-gray-200 text-gray-500 hover:border-gray-400'
-            }`}
-          >
-            {bookmarked ? '★ 저장됨' : '☆ 즐겨찾기'}
-          </button>
         </div>
       </div>
 
-      {/* 리뷰 목록 */}
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold text-gray-900">리뷰 {reviewList.length}개</h2>
-          {isLoggedIn && (
-            <button
-              onClick={() => setShowReviewForm((v) => !v)}
-              className="text-sm text-gray-500 hover:text-gray-900"
-            >
-              {showReviewForm ? '취소' : '+ 리뷰 작성'}
-            </button>
-          )}
+      <div className="max-w-2xl px-8 py-6">
+        {/* 액션 버튼 */}
+        <div className="flex gap-3 mb-8">
+          <button
+            onClick={handleLike}
+            className={`flex-1 py-3 border text-xs font-medium tracking-wider transition-colors ${
+              liked
+                ? 'bg-black text-white border-black'
+                : 'bg-white text-black border-gray-300 hover:border-black'
+            }`}
+          >
+            ♥ 좋아요 {likeCount}
+          </button>
+          <button
+            onClick={handleBookmark}
+            className={`flex-1 py-3 border text-xs font-medium tracking-wider transition-colors ${
+              bookmarked
+                ? 'bg-black text-white border-black'
+                : 'bg-white text-black border-gray-300 hover:border-black'
+            }`}
+          >
+            {bookmarked ? '★ 저장됨' : '☆ 저장하기'}
+          </button>
         </div>
 
-        {showReviewForm && (
-          <div className="mb-4">
-            <ReviewForm
-              restaurantId={id}
-              onSuccess={() => { setShowReviewForm(false); loadReviews(); }}
-            />
+        {/* 리뷰 섹션 */}
+        <div>
+          <div className="flex justify-between items-center mb-5">
+            <span className="text-sm font-semibold text-black">리뷰 {reviewList.length}</span>
+            {isLoggedIn && (
+              <button
+                onClick={() => setShowReviewForm((v) => !v)}
+                className="text-xs text-gray-500 hover:text-black transition-colors border border-gray-300 hover:border-black px-3 py-1.5"
+              >
+                {showReviewForm ? '취소' : '+ 리뷰 작성'}
+              </button>
+            )}
           </div>
-        )}
 
-        <div className="space-y-3">
-          {reviewList.map((review) => (
-            <div key={review.id} className="bg-white rounded-xl p-4 shadow-sm">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">{review.nickname}</span>
-                <StarRating value={review.rating} />
-              </div>
-              <p className="text-sm text-gray-600 mb-2">{review.content}</p>
-              {review.imageUrls?.length > 0 && (
-                <div className="flex gap-2">
-                  {review.imageUrls.map((url, i) => (
-                    <img key={i} src={url} alt="" className="w-20 h-20 rounded-lg object-cover" />
-                  ))}
-                </div>
-              )}
-              <p className="text-xs text-gray-300 mt-2">{review.createdAt?.slice(0, 10)}</p>
+          {showReviewForm && (
+            <div className="mb-5">
+              <ReviewForm
+                restaurantId={id}
+                onSuccess={() => { setShowReviewForm(false); loadReviews(); }}
+              />
             </div>
-          ))}
-          {reviewList.length === 0 && (
-            <p className="text-center text-gray-400 text-sm py-8">아직 리뷰가 없습니다</p>
           )}
+
+          <div className="space-y-px">
+            {reviewList.map((review) => (
+              <div key={review.id} className="border border-gray-200 p-5">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 border border-gray-200 flex items-center justify-center text-[11px] font-bold text-black">
+                      {review.nickname?.[0]}
+                    </div>
+                    <span className="text-sm font-medium text-black">{review.nickname}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <StarRating value={review.rating} />
+                    <span className="text-xs text-gray-300">{review.createdAt?.slice(0, 10)}</span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 leading-relaxed">{review.content}</p>
+                {review.imageUrls?.length > 0 && (
+                  <div className="flex gap-2 mt-4">
+                    {review.imageUrls.map((url, i) => (
+                      <img key={i} src={url} alt="" className="w-20 h-20 object-cover" />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            {reviewList.length === 0 && (
+              <div className="border border-gray-200 py-14 text-center">
+                <p className="text-xs text-gray-400">아직 리뷰가 없습니다</p>
+                {isLoggedIn && (
+                  <button
+                    onClick={() => setShowReviewForm(true)}
+                    className="mt-3 text-xs text-black underline hover:no-underline"
+                  >
+                    첫 번째 리뷰를 남겨보세요
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
