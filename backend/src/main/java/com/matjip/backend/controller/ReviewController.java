@@ -42,4 +42,9 @@ public class ReviewController {
         reviewService.delete(id, user.getUsername());
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/api/users/me/reviews")
+    public ResponseEntity<List<ReviewResponse>> myReviews(@AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(reviewService.getMyReviews(user.getUsername()));
+    }
 }

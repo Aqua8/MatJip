@@ -58,4 +58,12 @@ public class ReviewService {
         }
         reviewRepository.delete(review);
     }
+
+    @Transactional(readOnly = true)
+    public List<ReviewResponse> getMyReviews(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow();
+        return reviewRepository.findByUserId(user.getId()).stream()
+                .map(ReviewResponse::new)
+                .collect(Collectors.toList());
+    }
 }

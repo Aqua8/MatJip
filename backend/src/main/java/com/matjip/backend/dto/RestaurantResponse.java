@@ -13,8 +13,9 @@ public class RestaurantResponse {
     private Double lat;
     private Double lng;
     private long likeCount;
+    private Double avgRating;
 
-    public RestaurantResponse(Restaurant r, long likeCount) {
+    public RestaurantResponse(Restaurant r, long likeCount, Double avgRating) {
         this.id = r.getId();
         this.kakaoPlaceId = r.getKakaoPlaceId();
         this.name = r.getName();
@@ -23,5 +24,6 @@ public class RestaurantResponse {
         this.lat = r.getLat();
         this.lng = r.getLng();
         this.likeCount = likeCount;
+        this.avgRating = avgRating;
     }
 }

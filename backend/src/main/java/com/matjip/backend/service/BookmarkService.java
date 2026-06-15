@@ -18,13 +18,15 @@ public class BookmarkService {
     private final RestaurantRepository restaurantRepository;
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
+    private final ReviewRepository reviewRepository;
 
     @Transactional(readOnly = true)
     public List<RestaurantResponse> getBookmarks(String email) {
         User user = userRepository.findByEmail(email).orElseThrow();
         return bookmarkRepository.findByUserId(user.getId()).stream()
                 .map(b -> new RestaurantResponse(b.getRestaurant(),
-                        likeRepository.countByRestaurantId(b.getRestaurant().getId())))
+                        likeRepository.countByRestaurantId(b.getRestaurant().getId()),
+                        reviewRepository.avgRatingByRestaurantId(b.getRestaurant().getId())))
                 .collect(Collectors.toList());
     }
 
