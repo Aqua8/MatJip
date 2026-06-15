@@ -42,29 +42,29 @@ export default function ReviewForm({ restaurantId, onSuccess }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-50 rounded-xl p-4 space-y-3">
-      <p className="text-sm font-medium text-gray-700">리뷰 작성</p>
+    <form onSubmit={handleSubmit} className="border border-gray-200 p-5 space-y-4 bg-white">
+      <p className="text-xs font-semibold text-black tracking-wide">리뷰 작성</p>
       <StarRating value={rating} onChange={setRating} size="lg" />
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="맛집에 대한 솔직한 리뷰를 남겨주세요..."
-        rows={3}
-        className="w-full border border-gray-200 rounded-lg p-3 text-sm resize-none focus:outline-none focus:border-gray-400"
+        rows={4}
+        className="w-full border border-gray-200 p-4 text-sm resize-none bg-white outline-none focus:border-black transition-colors"
       />
-      <div className="flex items-center gap-3">
-        <label className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+      <div className="flex items-center gap-4">
+        <label className="text-xs text-gray-400 cursor-pointer hover:text-black transition-colors">
           {uploading ? '업로드 중...' : '+ 사진 추가'}
           <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={uploading} />
         </label>
         {imageUrls.map((url, i) => (
-          <img key={i} src={url} alt="" className="w-10 h-10 rounded object-cover" />
+          <img key={i} src={url} alt="" className="w-10 h-10 object-cover" />
         ))}
       </div>
       <button
         type="submit"
         disabled={submitting}
-        className="w-full bg-gray-900 text-white text-sm py-2.5 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+        className="w-full bg-black text-white text-xs py-3 tracking-widest hover:bg-gray-800 transition-colors disabled:opacity-50"
       >
         {submitting ? '제출 중...' : '리뷰 등록'}
       </button>

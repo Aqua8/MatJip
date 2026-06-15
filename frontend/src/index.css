@@ -1,14 +1,25 @@
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  :root {
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-border: #e5e5e5;
+    --color-text: #000000;
+    --color-text-muted: #999999;
+  }
+
+  body {
+    font-family: 'PretendardVariable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+  }
 }
 
-body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background-color: #f9f9f9;
-  color: #111;
-  -webkit-font-smoothing: antialiased;
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
 }

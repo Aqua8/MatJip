@@ -48,40 +48,53 @@ export default function MyPage() {
     }
   };
 
+  const inputClass = "w-full border-b border-gray-300 py-2.5 text-sm bg-transparent outline-none placeholder-gray-400 focus:border-black transition-colors";
+
   if (isLoggedIn) {
     return (
-      <div className="max-w-md mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-2xl">
-              👤
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 text-lg">{nickname}</p>
-              <p className="text-sm text-gray-400">맛집 탐험가</p>
+      <div className="h-full overflow-y-auto bg-white">
+        <div className="max-w-md mx-auto px-8 py-8">
+          {/* 프로필 */}
+          <div className="border border-gray-200 p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-bold text-base text-black">{nickname}</p>
+                <p className="text-xs text-gray-400 mt-0.5">맛집 탐험가</p>
+              </div>
+              <button
+                onClick={() => { logout(); navigate('/'); }}
+                className="text-xs border border-gray-300 px-4 py-2 hover:border-black transition-colors tracking-wide"
+              >
+                로그아웃
+              </button>
             </div>
           </div>
-          <button
-            onClick={() => { logout(); navigate('/'); }}
-            className="mt-4 w-full border border-gray-200 text-gray-500 py-2 rounded-lg text-sm hover:border-gray-400 transition-colors"
-          >
-            로그아웃
-          </button>
-        </div>
 
-        <div>
-          <h2 className="font-semibold text-gray-900 mb-3">내 리뷰 ({myReviews.length})</h2>
+          {/* 내 리뷰 */}
+          <div className="flex items-baseline gap-3 mb-5">
+            <h2 className="text-sm font-semibold text-black">내 리뷰</h2>
+            <span className="text-sm text-gray-400">{myReviews.length}</span>
+          </div>
+
           {myReviews.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">작성한 리뷰가 없습니다</p>
+            <div className="border border-gray-200 py-14 text-center">
+              <p className="text-xs text-gray-400 mb-4">작성한 리뷰가 없습니다</p>
+              <button
+                onClick={() => navigate('/')}
+                className="text-xs text-black underline hover:no-underline"
+              >
+                맛집 둘러보기
+              </button>
+            </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-px">
               {myReviews.map((r) => (
-                <div key={r.id} className="bg-white rounded-xl p-4 shadow-sm">
-                  <div className="flex justify-between items-center mb-1">
+                <div key={r.id} className="border border-gray-200 p-5">
+                  <div className="flex justify-between items-center mb-3">
                     <StarRating value={r.rating} />
                     <span className="text-xs text-gray-300">{r.createdAt?.slice(0, 10)}</span>
                   </div>
-                  <p className="text-sm text-gray-600">{r.content}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">{r.content}</p>
                 </div>
               ))}
             </div>
@@ -92,60 +105,43 @@ export default function MyPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 py-8">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">
-        {mode === 'login' ? '로그인' : '회원가입'}
-      </h1>
+    <div className="h-full flex items-center justify-center bg-white px-6">
+      <div className="w-full max-w-sm">
+        {/* 로고 */}
+        <div className="text-center mb-10">
+          <p className="text-2xl font-bold tracking-[0.25em] text-black mb-3">맛/집</p>
+          <p className="text-xs text-gray-400">
+            {mode === 'login' ? '계정에 로그인하세요' : '계정을 만들어 맛집을 탐험하세요'}
+          </p>
+        </div>
 
-      <form onSubmit={mode === 'login' ? handleLogin : handleSignup} className="bg-white rounded-2xl p-6 shadow-sm space-y-3">
-        {mode === 'signup' && (
-          <input
-            name="nickname"
-            value={form.nickname}
-            onChange={handleChange}
-            placeholder="닉네임"
-            required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-400"
-          />
-        )}
-        <input
-          name="email"
-          type="email"
-          value={form.email}
-          onChange={handleChange}
-          placeholder="이메일"
-          required
-          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-400"
-        />
-        <input
-          name="password"
-          type="password"
-          value={form.password}
-          onChange={handleChange}
-          placeholder="비밀번호"
-          required
-          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-400"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-gray-900 text-white py-2.5 rounded-lg text-sm hover:bg-gray-700 transition-colors disabled:opacity-50"
-        >
-          {loading ? '처리 중...' : mode === 'login' ? '로그인' : '가입하기'}
-        </button>
-      </form>
+        <form onSubmit={mode === 'login' ? handleLogin : handleSignup} className="space-y-5">
+          {mode === 'signup' && (
+            <input name="nickname" value={form.nickname} onChange={handleChange} placeholder="닉네임" required className={inputClass} />
+          )}
+          <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="이메일" required className={inputClass} />
+          <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="비밀번호" required className={inputClass} />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-black text-white py-3 text-xs font-medium tracking-widest hover:bg-gray-800 transition-colors disabled:opacity-50 mt-2"
+          >
+            {loading ? '처리 중...' : mode === 'login' ? '로그인' : '가입하기'}
+          </button>
+        </form>
 
-      <p className="text-center text-sm text-gray-400 mt-4">
-        {mode === 'login' ? (
-          <>계정이 없으신가요?{' '}
-            <button onClick={() => setMode('signup')} className="text-gray-700 font-medium">회원가입</button>
-          </>
-        ) : (
-          <>이미 계정이 있으신가요?{' '}
-            <button onClick={() => setMode('login')} className="text-gray-700 font-medium">로그인</button>
-          </>
-        )}
-      </p>
+        <p className="text-center text-xs text-gray-400 mt-6">
+          {mode === 'login' ? (
+            <>계정이 없으신가요?{' '}
+              <button onClick={() => setMode('signup')} className="text-black underline hover:no-underline">회원가입</button>
+            </>
+          ) : (
+            <>이미 계정이 있으신가요?{' '}
+              <button onClick={() => setMode('login')} className="text-black underline hover:no-underline">로그인</button>
+            </>
+          )}
+        </p>
+      </div>
     </div>
   );
 }

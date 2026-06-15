@@ -1,35 +1,47 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import RestaurantDetail from './pages/RestaurantDetail';
 import Bookmarks from './pages/Bookmarks';
 import MyPage from './pages/MyPage';
 
-function NavBar() {
-  const linkClass = ({ isActive }) =>
-    `text-sm px-3 py-1.5 rounded-lg transition-colors ${
-      isActive ? 'text-gray-900 font-medium' : 'text-gray-400 hover:text-gray-700'
-    }`;
-
+function Navbar() {
   return (
-    <nav className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white">
-      <NavLink to="/" className="text-base font-bold text-gray-900 tracking-tight">
-        맛집 지도
-      </NavLink>
-      <div className="flex items-center gap-1">
-        <NavLink to="/" end className={linkClass}>홈</NavLink>
-        <NavLink to="/bookmarks" className={linkClass}>즐겨찾기</NavLink>
-        <NavLink to="/mypage" className={linkClass}>마이페이지</NavLink>
+    <header className="h-[52px] border-b border-gray-200 flex items-center px-6 bg-white flex-shrink-0">
+      <div className="flex-1">
+        <button className="flex flex-col justify-center gap-[6px]" aria-label="메뉴">
+          <span className="w-[22px] h-[1.5px] bg-black block" />
+          <span className="w-[22px] h-[1.5px] bg-black block" />
+          <span className="w-[22px] h-[1.5px] bg-black block" />
+        </button>
       </div>
-    </nav>
+
+      <Link to="/" className="text-[13px] font-bold tracking-[0.3em] text-black select-none">
+        맛/집
+      </Link>
+
+      <div className="flex-1 flex justify-end items-center gap-5">
+        <NavLink to="/bookmarks" className={({ isActive }) => isActive ? 'text-black' : 'text-gray-400 hover:text-black transition-colors'}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+        </NavLink>
+        <NavLink to="/mypage" className={({ isActive }) => isActive ? 'text-black' : 'text-gray-400 hover:text-black transition-colors'}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </NavLink>
+      </div>
+    </header>
   );
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col">
-        <NavBar />
-        <main className="flex-1">
+      <div className="flex flex-col h-screen bg-white">
+        <Navbar />
+        <main className="flex-1 overflow-hidden">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/restaurants/:id" element={<RestaurantDetail />} />
