@@ -369,9 +369,15 @@ function DetailPanel({ restaurant, onClose, onNavigate, compact }) {
           {likeCount != null && <DetailRow label="좋아요" value={`${likeCount}개`} />}
         </div>
         <div className={`px-6 pb-6 ${compact ? 'pt-4' : 'mt-auto pt-4'}`}>
-          <button onClick={onNavigate} className="w-full bg-black text-white text-[12px] font-semibold tracking-[0.15em] py-4 hover:bg-gray-900 transition-colors">
-            상세 보기
-          </button>
+          {restaurant.id ? (
+            <button onClick={onNavigate} className="w-full bg-black text-white text-[12px] font-semibold tracking-[0.15em] py-4 hover:bg-gray-900 transition-colors">
+              상세 보기
+            </button>
+          ) : (
+            <p className="text-center text-[12px] text-gray-400 py-4">
+              로그인 후 저장된 맛집만 상세보기 가능합니다
+            </p>
+          )}
         </div>
       </div>
     </>
