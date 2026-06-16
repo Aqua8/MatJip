@@ -2,15 +2,17 @@ import { useEffect, useRef } from 'react';
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_APP_KEY;
 
-// 일반 마커: 작은 검정 핀 (22×30)
+// 일반 마커: 검정 핀 (22×30)
 const NORMAL_MARKER_SRC = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpath d='M11 0C4.9 0 0 4.9 0 11c0 8.25 11 19 11 19s11-10.75 11-19C22 4.9 17.1 0 11 0z' fill='%23000'/%3E%3C/svg%3E";
+// 내 즐겨찾기 마커: 검정 핀 + 흰 별 (24×33)
+const BOOKMARK_MARKER_SRC = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='33' viewBox='0 0 24 33'%3E%3Cpath d='M12 0C5.4 0 0 5.4 0 12c0 9 12 21 12 21s12-12 12-21C24 5.4 18.6 0 12 0z' fill='%23000'/%3E%3Cpolygon points='12,5 13.9,10.5 19.7,10.5 15.1,13.8 16.9,19.3 12,16 7.1,19.3 8.9,13.8 4.3,10.5 10.1,10.5' fill='white'/%3E%3C/svg%3E";
 // 선택된 마커: 흰 원 있는 큰 검정 핀 (28×38)
 const SELECTED_MARKER_SRC = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='38' viewBox='0 0 28 38'%3E%3Cpath d='M14 0C6.3 0 0 6.3 0 14c0 10.5 14 24 14 24s14-13.5 14-24C28 6.3 21.7 0 14 0z' fill='%23000'/%3E%3Ccircle cx='14' cy='14' r='5' fill='%23fff'/%3E%3C/svg%3E";
 
 // 페이지 이동 후 돌아와도 마지막 지도 위치 복원
 const mapStateCache = { lat: 37.5665, lng: 126.9780, level: 7 };
 
-export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, flyTo, selectedRestaurant, onPoiClick, onMapBlankClick }) {
+export default function Map({ restaurants = [], bookmarkedIds, onMarkerClick, onBoundsChange, flyTo, selectedRestaurant, onPoiClick, onMapBlankClick }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clustererRef = useRef(null);
@@ -25,11 +27,13 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
   const onBoundsChangeRef = useRef(onBoundsChange);
   const onPoiClickRef = useRef(onPoiClick);
   const onMapBlankClickRef = useRef(onMapBlankClick);
+  const bookmarkedIdsRef = useRef(bookmarkedIds);
   useEffect(() => { restaurantsRef.current = restaurants; });
   useEffect(() => { onMarkerClickRef.current = onMarkerClick; });
   useEffect(() => { onBoundsChangeRef.current = onBoundsChange; });
   useEffect(() => { onPoiClickRef.current = onPoiClick; });
   useEffect(() => { onMapBlankClickRef.current = onMapBlankClick; });
+  useEffect(() => { bookmarkedIdsRef.current = bookmarkedIds; });
 
   useEffect(() => {
     if (!KAKAO_APP_KEY) return;
@@ -127,6 +131,10 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
   }, [restaurants]);
 
   useEffect(() => {
+    if (mapRef.current) setMarkers(mapRef.current, restaurantsRef.current);
+  }, [bookmarkedIds]);
+
+  useEffect(() => {
     if (flyTo && mapRef.current) {
       mapRef.current.panTo(new window.kakao.maps.LatLng(flyTo.lat, flyTo.lng));
     }
@@ -171,14 +179,20 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
       new window.kakao.maps.Size(22, 30),
       { offset: new window.kakao.maps.Point(11, 30) }
     );
+    const bookmarkImage = new window.kakao.maps.MarkerImage(
+      BOOKMARK_MARKER_SRC,
+      new window.kakao.maps.Size(24, 33),
+      { offset: new window.kakao.maps.Point(12, 33) }
+    );
 
     const markers = list
       .filter((r) => r.lat && r.lng)
       .map((r) => {
+        const isMine = bookmarkedIdsRef.current?.has(r.kakaoPlaceId);
         const marker = new window.kakao.maps.Marker({
           position: new window.kakao.maps.LatLng(r.lat, r.lng),
           title: r.name,
-          image: normalImage,
+          image: isMine ? bookmarkImage : normalImage,
         });
         window.kakao.maps.event.addListener(marker, 'click', () => {
           // 이전 말풍선 제거

@@ -382,6 +382,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
         <div className="flex-1 relative">
           <Map
             restaurants={filtered}
+            bookmarkedIds={bookmarkedIds}
             onMarkerClick={handleSelect}
             onBoundsChange={setMapBounds}
             flyTo={flyTo}
