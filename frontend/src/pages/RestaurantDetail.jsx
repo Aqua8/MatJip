@@ -61,7 +61,7 @@ export default function RestaurantDetail() {
   return (
     <div className="h-full overflow-y-auto bg-white">
       {/* 헤더 */}
-      <div className="border-b border-gray-200 px-8 pt-8 pb-7">
+      <div className="border-b border-gray-200 px-4 md:px-8 pt-8 pb-7">
         <button
           onClick={() => navigate(-1)}
           className="text-xs text-gray-400 hover:text-black transition-colors mb-6 flex items-center gap-1.5"
@@ -85,7 +85,7 @@ export default function RestaurantDetail() {
         </div>
       </div>
 
-      <div className="max-w-2xl px-8 py-6">
+      <div className="max-w-2xl px-4 md:px-8 py-6">
         {/* 액션 버튼 */}
         <div className="flex gap-3 mb-8">
           <button

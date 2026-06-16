@@ -53,7 +53,7 @@ export default function MyPage() {
   if (isLoggedIn) {
     return (
       <div className="h-full overflow-y-auto bg-white">
-        <div className="max-w-md mx-auto px-8 py-8">
+        <div className="max-w-md mx-auto px-4 md:px-8 py-8">
           {/* 프로필 */}
           <div className="border border-gray-200 p-6 mb-8">
             <div className="flex items-center justify-between">
