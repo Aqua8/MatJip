@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_APP_KEY;
 
+// 일반 마커: 작은 검정 핀 (22×30)
+const NORMAL_MARKER_SRC = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpath d='M11 0C4.9 0 0 4.9 0 11c0 8.25 11 19 11 19s11-10.75 11-19C22 4.9 17.1 0 11 0z' fill='%23000'/%3E%3C/svg%3E";
+// 선택된 마커: 흰 원 있는 큰 검정 핀 (28×38)
 const SELECTED_MARKER_SRC = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='38' viewBox='0 0 28 38'%3E%3Cpath d='M14 0C6.3 0 0 6.3 0 14c0 10.5 14 24 14 24s14-13.5 14-24C28 6.3 21.7 0 14 0z' fill='%23000'/%3E%3Ccircle cx='14' cy='14' r='5' fill='%23fff'/%3E%3C/svg%3E";
 
 // 페이지 이동 후 돌아와도 마지막 지도 위치 복원
@@ -157,12 +160,19 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
     markersRef.current = [];
     clustererRef.current?.clear();
 
+    const normalImage = new window.kakao.maps.MarkerImage(
+      NORMAL_MARKER_SRC,
+      new window.kakao.maps.Size(22, 30),
+      { offset: new window.kakao.maps.Point(11, 30) }
+    );
+
     const markers = list
       .filter((r) => r.lat && r.lng)
       .map((r) => {
         const marker = new window.kakao.maps.Marker({
           position: new window.kakao.maps.LatLng(r.lat, r.lng),
           title: r.name,
+          image: normalImage,
         });
         window.kakao.maps.event.addListener(marker, 'click', () => {
           // 이전 말풍선 제거
