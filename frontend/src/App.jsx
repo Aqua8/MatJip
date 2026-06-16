@@ -1,14 +1,15 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import RestaurantDetail from './pages/RestaurantDetail';
 import Bookmarks from './pages/Bookmarks';
 import MyPage from './pages/MyPage';
 
-function Navbar() {
+function Navbar({ onMenuClick }) {
   return (
     <header className="h-[52px] border-b border-gray-200 flex items-center px-6 bg-white flex-shrink-0">
       <div className="flex-1">
-        <button className="flex flex-col justify-center gap-[6px]" aria-label="메뉴">
+        <button onClick={onMenuClick} className="flex flex-col justify-center gap-[6px]" aria-label="메뉴">
           <span className="w-[22px] h-[1.5px] bg-black block" />
           <span className="w-[22px] h-[1.5px] bg-black block" />
           <span className="w-[22px] h-[1.5px] bg-black block" />
@@ -37,13 +38,15 @@ function Navbar() {
 }
 
 export default function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   return (
     <BrowserRouter>
       <div className="flex flex-col h-screen bg-white">
-        <Navbar />
+        <Navbar onMenuClick={() => setSidebarOpen((v) => !v)} />
         <main className="flex-1 overflow-hidden">
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Home sidebarOpen={sidebarOpen} />} />
             <Route path="/restaurants/:id" element={<RestaurantDetail />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
             <Route path="/mypage" element={<MyPage />} />
