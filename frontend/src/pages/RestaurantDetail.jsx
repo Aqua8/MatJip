@@ -25,6 +25,13 @@ export default function RestaurantDetail() {
     loadReviews();
   }, [id]);
 
+  useEffect(() => {
+    if (!isLoggedIn) { setBookmarked(false); return; }
+    bookmarks.list().then((res) => {
+      setBookmarked(res.data.some((r) => r.id === Number(id)));
+    }).catch(() => {});
+  }, [id, isLoggedIn]);
+
   const loadReviews = () => {
     reviewsApi.list(id).then((res) => setReviewList(res.data)).catch(() => {});
   };
