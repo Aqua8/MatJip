@@ -38,7 +38,7 @@ function Navbar({ onMenuClick }) {
 }
 
 export default function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
 
   return (
     <BrowserRouter>
@@ -46,7 +46,15 @@ export default function App() {
         <Navbar onMenuClick={() => setSidebarOpen((v) => !v)} />
         <main className="flex-1 overflow-hidden">
           <Routes>
-            <Route path="/" element={<Home sidebarOpen={sidebarOpen} />} />
+            <Route
+              path="/"
+              element={
+                <Home
+                  sidebarOpen={sidebarOpen}
+                  onSidebarClose={() => setSidebarOpen(false)}
+                />
+              }
+            />
             <Route path="/restaurants/:id" element={<RestaurantDetail />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
             <Route path="/mypage" element={<MyPage />} />

@@ -30,7 +30,7 @@ export default function Bookmarks() {
 
   return (
     <div className="h-full overflow-y-auto bg-white">
-      <div className="max-w-3xl mx-auto px-8 py-8">
+      <div className="max-w-3xl mx-auto px-4 md:px-8 py-8">
         <div className="flex items-baseline gap-3 mb-8">
           <h1 className="text-lg font-bold text-black">저장한 맛집</h1>
           <span className="text-sm text-gray-400">{list.length}</span>
