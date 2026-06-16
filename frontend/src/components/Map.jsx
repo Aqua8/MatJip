@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_APP_KEY;
 
-export default function Map({ restaurants = [], onMarkerClick, onBoundsChange }) {
+export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, flyTo }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clustererRef = useRef(null);
@@ -81,6 +81,12 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange })
   useEffect(() => {
     if (mapRef.current) setMarkers(mapRef.current, restaurants);
   }, [restaurants]);
+
+  useEffect(() => {
+    if (flyTo && mapRef.current) {
+      mapRef.current.panTo(new window.kakao.maps.LatLng(flyTo.lat, flyTo.lng));
+    }
+  }, [flyTo]);
 
   function setMarkers(map, list) {
     markersRef.current.forEach((m) => m.setMap(null));
