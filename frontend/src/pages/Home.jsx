@@ -320,6 +320,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
             onBoundsChange={setMapBounds}
             flyTo={flyTo}
             selectedRestaurant={selected}
+            onPoiClick={handleKakaoResultClick}
           />
         </div>
 
