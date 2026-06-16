@@ -2,12 +2,16 @@ import { useEffect, useRef } from 'react';
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_APP_KEY;
 
-export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, flyTo }) {
+// 선택된 식당용 검은 핀 마커 이미지 (SVG data URI)
+const SELECTED_MARKER_SRC = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='38' viewBox='0 0 28 38'%3E%3Cpath d='M14 0C6.3 0 0 6.3 0 14c0 10.5 14 24 14 24s14-13.5 14-24C28 6.3 21.7 0 14 0z' fill='%23000'/%3E%3Ccircle cx='14' cy='14' r='5' fill='%23fff'/%3E%3C/svg%3E";
+
+export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, flyTo, selectedRestaurant }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clustererRef = useRef(null);
   const markersRef = useRef([]);
   const myLocationRef = useRef(null);
+  const selectedMarkerRef = useRef(null);
 
   // 콜백/데이터를 ref로 유지해서 stale closure 방지
   const restaurantsRef = useRef(restaurants);
@@ -87,6 +91,27 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
       mapRef.current.panTo(new window.kakao.maps.LatLng(flyTo.lat, flyTo.lng));
     }
   }, [flyTo]);
+
+  // 선택된 식당 강조 마커
+  useEffect(() => {
+    if (!mapRef.current || !window.kakao?.maps) return;
+    selectedMarkerRef.current?.setMap(null);
+    selectedMarkerRef.current = null;
+
+    if (selectedRestaurant?.lat && selectedRestaurant?.lng) {
+      const image = new window.kakao.maps.MarkerImage(
+        SELECTED_MARKER_SRC,
+        new window.kakao.maps.Size(28, 38),
+        { offset: new window.kakao.maps.Point(14, 38) }
+      );
+      selectedMarkerRef.current = new window.kakao.maps.Marker({
+        map: mapRef.current,
+        position: new window.kakao.maps.LatLng(selectedRestaurant.lat, selectedRestaurant.lng),
+        image,
+        zIndex: 10,
+      });
+    }
+  }, [selectedRestaurant]);
 
   function setMarkers(map, list) {
     markersRef.current.forEach((m) => m.setMap(null));

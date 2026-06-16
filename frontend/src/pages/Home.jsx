@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Map from '../components/Map';
 import RestaurantCard from '../components/RestaurantCard';
-import { restaurants as restaurantsApi } from '../api';
+import { restaurants as restaurantsApi, bookmarks as bookmarksApi } from '../api';
+import { useAuth } from '../store/authStore';
 
 const CATEGORIES = ['전체', '한식', '일식', '중식', '양식', '카페', '기타'];
 
@@ -17,6 +18,7 @@ const mapCategory = (categoryName = '') => {
 
 export default function Home({ sidebarOpen, onSidebarClose }) {
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
 
   const [list, setList] = useState([]);
   const [category, setCategory] = useState('전체');
@@ -35,6 +37,16 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
 
   // 지도 이동
   const [flyTo, setFlyTo] = useState(null);
+
+  // 즐겨찾기된 kakaoPlaceId Set
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
+
+  useEffect(() => {
+    if (!isLoggedIn) { setBookmarkedIds(new Set()); return; }
+    bookmarksApi.list().then((res) => {
+      setBookmarkedIds(new Set(res.data.map((r) => r.kakaoPlaceId).filter(Boolean)));
+    }).catch(() => {});
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -86,36 +98,54 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
     setKakaoResults([]);
   };
 
-  // 카카오 결과 클릭 → DB 등록 → 선택
+  // 카카오 결과 클릭 → DB 등록(로그인 시) → 선택
   const handleKakaoResultClick = async (place) => {
     const lat = parseFloat(place.y);
     const lng = parseFloat(place.x);
     setFlyTo({ lat, lng });
 
-    try {
-      await restaurantsApi.create({
-        kakaoPlaceId: place.id,
-        name: place.place_name,
-        address: place.road_address_name || place.address_name,
-        category: mapCategory(place.category_name),
-        lat,
-        lng,
-      });
-    } catch (err) {
-      if (err.response?.status !== 409) return;
+    // DB에 이미 있으면 바로 선택
+    const existing = list.find((r) => r.kakaoPlaceId === place.id);
+    if (existing) {
+      setSelected(existing);
+      if (isMobile && sidebarOpen) onSidebarClose();
+      clearSearch();
+      return;
     }
 
-    // 리스트 갱신 후 해당 식당 선택
-    const res = await restaurantsApi.list('').catch(() => null);
-    if (res?.data) {
-      setList(res.data);
-      const found = res.data.find((r) => r.kakaoPlaceId === place.id);
-      if (found) {
-        setSelected(found);
-        if (isMobile && sidebarOpen) onSidebarClose();
+    // 로그인한 경우만 등록 시도
+    if (isLoggedIn) {
+      try {
+        await restaurantsApi.create({
+          kakaoPlaceId: place.id,
+          name: place.place_name,
+          address: place.road_address_name || place.address_name,
+          category: mapCategory(place.category_name),
+          lat,
+          lng,
+        });
+      } catch (err) {
+        if (err.response?.status !== 409) {
+          // 등록 실패 시 선택만 진행
+        }
+      }
+
+      const res = await restaurantsApi.list('').catch(() => null);
+      if (res?.data) {
+        setList(res.data);
+        const found = res.data.find((r) => r.kakaoPlaceId === place.id);
+        if (found) {
+          setSelected(found);
+          if (isMobile && sidebarOpen) onSidebarClose();
+          clearSearch();
+          return;
+        }
       }
     }
 
+    // 비로그인 or 등록 실패: 임시 객체로 패널 표시
+    setSelected({ kakaoPlaceId: place.id, name: place.place_name, address: place.road_address_name || place.address_name, category: mapCategory(place.category_name), lat, lng });
+    if (isMobile && sidebarOpen) onSidebarClose();
     clearSearch();
   };
 
@@ -222,6 +252,9 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
                   <div className="flex items-baseline gap-1 mb-[6px] min-w-0">
                     <span className="font-semibold text-[15px] leading-snug text-black truncate">{place.place_name}</span>
                     <span className="text-[13px] text-gray-400 flex-shrink-0 font-light">/{mapCategory(place.category_name)}</span>
+                    {bookmarkedIds.has(place.id) && (
+                      <span className="text-[12px] text-black flex-shrink-0 ml-auto">★</span>
+                    )}
                   </div>
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="text-[12px] text-gray-400 truncate">{place.road_address_name || place.address_name}</span>
@@ -271,6 +304,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
             onMarkerClick={handleSelect}
             onBoundsChange={setMapBounds}
             flyTo={flyTo}
+            selectedRestaurant={selected}
           />
         </div>
 
