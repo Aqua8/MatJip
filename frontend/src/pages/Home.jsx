@@ -151,6 +151,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
 
   const handleSelect = (r) => {
     setSelected(r);
+    if (r?.lat && r?.lng) setFlyTo({ lat: r.lat, lng: r.lng });
     if (isMobile && sidebarOpen) onSidebarClose();
   };
 

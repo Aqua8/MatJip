@@ -2,8 +2,10 @@ import { useEffect, useRef } from 'react';
 
 const KAKAO_APP_KEY = import.meta.env.VITE_KAKAO_APP_KEY;
 
-// 선택된 식당용 검은 핀 마커 이미지 (SVG data URI)
 const SELECTED_MARKER_SRC = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='38' viewBox='0 0 28 38'%3E%3Cpath d='M14 0C6.3 0 0 6.3 0 14c0 10.5 14 24 14 24s14-13.5 14-24C28 6.3 21.7 0 14 0z' fill='%23000'/%3E%3Ccircle cx='14' cy='14' r='5' fill='%23fff'/%3E%3C/svg%3E";
+
+// 페이지 이동 후 돌아와도 마지막 지도 위치 복원
+const mapStateCache = { lat: 37.5665, lng: 126.9780, level: 7 };
 
 export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, flyTo, selectedRestaurant }) {
   const containerRef = useRef(null);
@@ -29,8 +31,8 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
     script.onload = () => {
       window.kakao.maps.load(() => {
         const map = new window.kakao.maps.Map(containerRef.current, {
-          center: new window.kakao.maps.LatLng(37.5665, 126.9780),
-          level: 7,
+          center: new window.kakao.maps.LatLng(mapStateCache.lat, mapStateCache.lng),
+          level: mapStateCache.level,
         });
         mapRef.current = map;
 
@@ -43,8 +45,13 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
           minClusterSize: 2,
         });
 
-        // idle 이벤트 → 지도 범위 전달
+        // idle 이벤트 → 위치 캐시 저장 + 지도 범위 전달
         window.kakao.maps.event.addListener(map, 'idle', () => {
+          const center = map.getCenter();
+          mapStateCache.lat = center.getLat();
+          mapStateCache.lng = center.getLng();
+          mapStateCache.level = map.getLevel();
+
           const bounds = map.getBounds();
           const sw = bounds.getSouthWest();
           const ne = bounds.getNorthEast();
