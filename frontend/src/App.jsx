@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import RestaurantDetail from './pages/RestaurantDetail';
 import Bookmarks from './pages/Bookmarks';
 import MyPage from './pages/MyPage';
+import Toast from './components/Toast';
 
 function Navbar({ onMenuClick }) {
   return (
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="/mypage" element={<MyPage />} />
           </Routes>
         </main>
+        <Toast />
       </div>
     </BrowserRouter>
   );

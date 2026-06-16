@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import StarRating from '../components/StarRating';
 import { auth, userReviews as userReviewsApi, user as userApi } from '../api';
 import { useAuth } from '../store/authStore';
+import { toast } from '../store/toastStore';
+
+const PW_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&]).{8,}$/;
+const PW_HINT = '영문, 숫자, 특수문자(@$!%*#?&)를 포함한 8자 이상';
 
 export default function MyPage() {
   const { isLoggedIn, nickname, login, logout, updateNickname } = useAuth();
@@ -39,8 +43,9 @@ export default function MyPage() {
       updateNickname(res.data.nickname);
       setNicknameEdit(false);
       setNewNickname('');
+      toast('닉네임이 변경되었습니다.', 'success');
     } catch {
-      alert('닉네임 변경에 실패했습니다.');
+      toast('닉네임 변경에 실패했습니다.');
     } finally {
       setNicknameSaving(false);
     }
@@ -48,15 +53,16 @@ export default function MyPage() {
 
   const handlePasswordSave = async (e) => {
     e.preventDefault();
-    if (pwForm.newPassword !== pwForm.confirm) return alert('새 비밀번호가 일치하지 않습니다.');
+    if (!PW_REGEX.test(pwForm.newPassword)) return toast(PW_HINT);
+    if (pwForm.newPassword !== pwForm.confirm) return toast('새 비밀번호가 일치하지 않습니다.');
     setPwSaving(true);
     try {
       await userApi.updatePassword(pwForm.currentPassword, pwForm.newPassword);
-      alert('비밀번호가 변경되었습니다.');
+      toast('비밀번호가 변경되었습니다.', 'success');
       setPwEdit(false);
       setPwForm({ currentPassword: '', newPassword: '', confirm: '' });
     } catch (err) {
-      alert(err.response?.data?.message || '비밀번호 변경에 실패했습니다.');
+      toast(err.response?.data?.message || '비밀번호 변경에 실패했습니다.');
     } finally {
       setPwSaving(false);
     }
@@ -69,7 +75,7 @@ export default function MyPage() {
       const res = await auth.login({ email: form.email, password: form.password });
       login(res.data.token, res.data.nickname);
     } catch {
-      alert('로그인 실패. 이메일/비밀번호를 확인해주세요.');
+      toast('로그인 실패. 이메일/비밀번호를 확인해주세요.');
     } finally {
       setLoading(false);
     }
@@ -77,13 +83,14 @@ export default function MyPage() {
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    if (!PW_REGEX.test(form.password)) return toast(PW_HINT);
     setLoading(true);
     try {
       await auth.signup(form);
-      alert('회원가입 완료! 로그인해주세요.');
+      toast('회원가입 완료! 로그인해주세요.', 'success');
       setMode('login');
     } catch {
-      alert('회원가입 실패. 이미 사용 중인 이메일일 수 있습니다.');
+      toast('회원가입 실패. 이미 사용 중인 이메일일 수 있습니다.');
     } finally {
       setLoading(false);
     }
@@ -158,14 +165,17 @@ export default function MyPage() {
                     className="w-full border-b border-gray-300 py-1.5 text-sm bg-transparent outline-none focus:border-black transition-colors"
                     autoFocus
                   />
-                  <input
-                    type="password"
-                    placeholder="새 비밀번호 (6자 이상)"
-                    value={pwForm.newPassword}
-                    onChange={(e) => setPwForm((f) => ({ ...f, newPassword: e.target.value }))}
-                    required
-                    className="w-full border-b border-gray-300 py-1.5 text-sm bg-transparent outline-none focus:border-black transition-colors"
-                  />
+                  <div>
+                    <input
+                      type="password"
+                      placeholder="새 비밀번호"
+                      value={pwForm.newPassword}
+                      onChange={(e) => setPwForm((f) => ({ ...f, newPassword: e.target.value }))}
+                      required
+                      className="w-full border-b border-gray-300 py-1.5 text-sm bg-transparent outline-none focus:border-black transition-colors"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1">{PW_HINT}</p>
+                  </div>
                   <input
                     type="password"
                     placeholder="새 비밀번호 확인"
@@ -254,7 +264,12 @@ export default function MyPage() {
             <input name="nickname" value={form.nickname} onChange={handleChange} placeholder="닉네임" required className={inputClass} />
           )}
           <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="이메일" required className={inputClass} />
-          <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="비밀번호" required className={inputClass} />
+          <div>
+            <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="비밀번호" required className={inputClass} />
+            {mode === 'signup' && (
+              <p className="text-[11px] text-gray-400 mt-1.5">{PW_HINT}</p>
+            )}
+          </div>
           <button
             type="submit"
             disabled={loading}

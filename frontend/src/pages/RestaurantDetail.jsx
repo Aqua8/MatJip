@@ -4,6 +4,7 @@ import StarRating from '../components/StarRating';
 import ReviewForm from '../components/ReviewForm';
 import { restaurants as restaurantsApi, reviews as reviewsApi, likes, bookmarks } from '../api';
 import { useAuth } from '../store/authStore';
+import { toast } from '../store/toastStore';
 
 export default function RestaurantDetail() {
   const { id } = useParams();
@@ -37,7 +38,7 @@ export default function RestaurantDetail() {
   };
 
   const handleLike = async () => {
-    if (!isLoggedIn) return alert('로그인이 필요합니다.');
+    if (!isLoggedIn) return toast('로그인이 필요합니다.');
     try {
       const res = await likes.toggle(id);
       setLiked(res.data.liked);
@@ -46,7 +47,7 @@ export default function RestaurantDetail() {
   };
 
   const handleBookmark = async () => {
-    if (!isLoggedIn) return alert('로그인이 필요합니다.');
+    if (!isLoggedIn) return toast('로그인이 필요합니다.');
     try {
       const res = await bookmarks.toggle(id);
       setBookmarked(res.data.bookmarked);

@@ -4,6 +4,7 @@ import Map from '../components/Map';
 import RestaurantCard from '../components/RestaurantCard';
 import { restaurants as restaurantsApi, bookmarks as bookmarksApi } from '../api';
 import { useAuth } from '../store/authStore';
+import { toast } from '../store/toastStore';
 
 const CATEGORIES = ['전체', '한식', '일식', '중식', '양식', '카페', '기타'];
 const RECENT_KEY = 'matjip_recent';
@@ -169,7 +170,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
   };
 
   const handleToggleBookmark = async () => {
-    if (!isLoggedIn) return alert('로그인이 필요합니다.');
+    if (!isLoggedIn) return toast('로그인이 필요합니다.');
 
     let target = selected;
 
