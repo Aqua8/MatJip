@@ -10,7 +10,7 @@ const SELECTED_MARKER_SRC = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http
 // 페이지 이동 후 돌아와도 마지막 지도 위치 복원
 const mapStateCache = { lat: 37.5665, lng: 126.9780, level: 7 };
 
-export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, flyTo, selectedRestaurant, onPoiClick }) {
+export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, flyTo, selectedRestaurant, onPoiClick, onMapBlankClick }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const clustererRef = useRef(null);
@@ -24,10 +24,12 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
   const onMarkerClickRef = useRef(onMarkerClick);
   const onBoundsChangeRef = useRef(onBoundsChange);
   const onPoiClickRef = useRef(onPoiClick);
+  const onMapBlankClickRef = useRef(onMapBlankClick);
   useEffect(() => { restaurantsRef.current = restaurants; });
   useEffect(() => { onMarkerClickRef.current = onMarkerClick; });
   useEffect(() => { onBoundsChangeRef.current = onBoundsChange; });
   useEffect(() => { onPoiClickRef.current = onPoiClick; });
+  useEffect(() => { onMapBlankClickRef.current = onMapBlankClick; });
 
   useEffect(() => {
     if (!KAKAO_APP_KEY) return;
@@ -75,17 +77,21 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
 
           if (!onPoiClickRef.current) return;
           // FD6=음식점, CE7=카페 순서로 검색 (FD6 결과 있으면 CE7 스킵)
+          const opts = { location: mouseEvent.latLng, radius: 20, sort: window.kakao.maps.services.SortBy.DISTANCE };
           ps.categorySearch('FD6', (results, status) => {
             if (status === window.kakao.maps.services.Status.OK && results.length > 0) {
-              onPoiClickRef.current(results[0]);
+              onPoiClickRef.current?.(results[0]);
               return;
             }
             ps.categorySearch('CE7', (r2, s2) => {
               if (s2 === window.kakao.maps.services.Status.OK && r2.length > 0) {
-                onPoiClickRef.current(r2[0]);
+                onPoiClickRef.current?.(r2[0]);
+              } else {
+                // 주변에 식당/카페 없음 → 빈 곳 클릭으로 간주
+                onMapBlankClickRef.current?.();
               }
-            }, { location: mouseEvent.latLng, radius: 20, sort: window.kakao.maps.services.SortBy.DISTANCE });
-          }, { location: mouseEvent.latLng, radius: 20, sort: window.kakao.maps.services.SortBy.DISTANCE });
+            }, opts);
+          }, opts);
         });
 
         // 현위치

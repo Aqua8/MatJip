@@ -57,6 +57,14 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
     }).catch(() => {});
   }, [isLoggedIn]);
 
+  // Escape 키로 패널 닫기
+  useEffect(() => {
+    if (!selected) return;
+    const handleKeyDown = (e) => { if (e.key === 'Escape') setSelected(null); };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selected]);
+
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handler);
@@ -379,6 +387,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
             flyTo={flyTo}
             selectedRestaurant={selected}
             onPoiClick={handleKakaoResultClick}
+            onMapBlankClick={() => setSelected(null)}
           />
         </div>
 
