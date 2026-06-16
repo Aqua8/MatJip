@@ -22,3 +22,6 @@ spring:
 jwt:
   secret: replace-with-at-least-32-character-secret-key
   expiration: 86400000
+
+gcs:
+  bucket-name: your-gcs-bucket-name
