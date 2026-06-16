@@ -20,8 +20,8 @@ public class RestaurantService {
 
     public List<RestaurantResponse> search(String keyword) {
         List<Restaurant> list = (keyword == null || keyword.isBlank())
-                ? restaurantRepository.findAll()
-                : restaurantRepository.findByNameContainingOrAddressContaining(keyword, keyword);
+                ? restaurantRepository.findAllWithBookmarks()
+                : restaurantRepository.findWithBookmarksByKeyword(keyword);
         return list.stream()
                 .map(r -> new RestaurantResponse(r,
                         likeRepository.countByRestaurantId(r.getId()),
