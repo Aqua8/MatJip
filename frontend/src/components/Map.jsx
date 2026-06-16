@@ -14,6 +14,7 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
   const markersRef = useRef([]);
   const myLocationRef = useRef(null);
   const selectedMarkerRef = useRef(null);
+  const infoOverlayRef = useRef(null);
 
   // 콜백/데이터를 ref로 유지해서 stale closure 방지
   const restaurantsRef = useRef(restaurants);
@@ -61,6 +62,12 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
           });
         });
 
+        // 지도 빈 곳 클릭 → 말풍선 닫기
+        window.kakao.maps.event.addListener(map, 'click', () => {
+          infoOverlayRef.current?.setMap(null);
+          infoOverlayRef.current = null;
+        });
+
         // 현위치
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(({ coords }) => {
@@ -99,6 +106,14 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
     }
   }, [flyTo]);
 
+  // selectedRestaurant 없어지면 말풍선도 닫기
+  useEffect(() => {
+    if (!selectedRestaurant) {
+      infoOverlayRef.current?.setMap(null);
+      infoOverlayRef.current = null;
+    }
+  }, [selectedRestaurant]);
+
   // 선택된 식당 강조 마커
   useEffect(() => {
     if (!mapRef.current || !window.kakao?.maps) return;
@@ -133,6 +148,32 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
           title: r.name,
         });
         window.kakao.maps.event.addListener(marker, 'click', () => {
+          // 이전 말풍선 제거
+          infoOverlayRef.current?.setMap(null);
+
+          // 말풍선 생성
+          const card = document.createElement('div');
+          card.style.cssText = 'padding-bottom:44px;position:relative;cursor:pointer;';
+          const rating = r.avgRating ? `<span style="font-size:11px;color:#6b7280;margin-left:4px;">★ ${Number(r.avgRating).toFixed(1)}</span>` : '';
+          card.innerHTML = `
+            <div style="background:#fff;border:1px solid #e5e7eb;padding:10px 14px;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.1);position:relative;min-width:120px;">
+              <div style="font-weight:700;font-size:13px;color:#000;margin-bottom:3px;">${r.name}</div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <span style="font-size:11px;color:#9ca3af;">${r.category}</span>${rating}
+              </div>
+              <div style="position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:7px solid #e5e7eb;"></div>
+              <div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid #fff;"></div>
+            </div>
+          `;
+
+          infoOverlayRef.current = new window.kakao.maps.CustomOverlay({
+            map: mapRef.current,
+            position: marker.getPosition(),
+            content: card,
+            yAnchor: 1,
+            zIndex: 5,
+          });
+
           onMarkerClickRef.current?.(r);
         });
         return marker;
