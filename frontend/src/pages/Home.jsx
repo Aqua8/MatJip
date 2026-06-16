@@ -6,6 +6,7 @@ import { restaurants as restaurantsApi, bookmarks as bookmarksApi } from '../api
 import { useAuth } from '../store/authStore';
 
 const CATEGORIES = ['전체', '한식', '일식', '중식', '양식', '카페', '기타'];
+const RECENT_KEY = 'matjip_recent';
 
 const mapCategory = (categoryName = '') => {
   if (categoryName.includes('한식')) return '한식';
@@ -16,11 +17,19 @@ const mapCategory = (categoryName = '') => {
   return '기타';
 };
 
+const loadRecent = () => {
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; }
+};
+const saveRecent = (items) => {
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(items)); } catch {}
+};
+
 export default function Home({ sidebarOpen, onSidebarClose }) {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
 
   const [list, setList] = useState([]);
+  const [recentList, setRecentList] = useState(() => loadRecent());
   const [category, setCategory] = useState('전체');
   const [selected, setSelected] = useState(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -68,9 +77,32 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
     );
   };
 
+  // 지도 마커용 (DB에 등록된 = 즐겨찾기된 식당)
   const filtered = list
     .filter((r) => category === '전체' || r.category === category)
     .filter(inBounds);
+
+  // 사이드바용 (최근 본 식당, 최신순)
+  const recentFiltered = recentList
+    .filter((r) => category === '전체' || r.category === category)
+    .filter(inBounds);
+
+  const addToRecent = (restaurant) => {
+    if (!restaurant?.name) return;
+    const key = restaurant.kakaoPlaceId || String(restaurant.id);
+    if (!key) return;
+    setRecentList((prev) => {
+      const deduped = prev.filter((r) => (r.kakaoPlaceId || String(r.id)) !== key);
+      const updated = [{ ...restaurant, viewedAt: Date.now() }, ...deduped].slice(0, 30);
+      saveRecent(updated);
+      return updated;
+    });
+  };
+
+  const clearRecent = () => {
+    try { localStorage.removeItem(RECENT_KEY); } catch {}
+    setRecentList([]);
+  };
 
   // 카카오 검색 실행
   const handleSearch = (e) => {
@@ -98,74 +130,78 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
     setKakaoResults([]);
   };
 
-  // 카카오 결과 클릭 → DB 등록(로그인 시) → 선택
-  const handleKakaoResultClick = async (place) => {
+  // 카카오 결과/POI 클릭 → DB에 즉시 등록하지 않음, 임시 객체로 패널 표시
+  const handleKakaoResultClick = (place) => {
     const lat = parseFloat(place.y);
     const lng = parseFloat(place.x);
     setFlyTo({ lat, lng });
 
-    // DB에 이미 있으면 바로 선택
+    // DB에 이미 있는 식당이면 (즐겨찾기된 경우) 해당 객체 사용
     const existing = list.find((r) => r.kakaoPlaceId === place.id);
-    if (existing) {
-      setSelected(existing);
-      if (isMobile && sidebarOpen) onSidebarClose();
-      clearSearch();
-      return;
-    }
+    const restaurant = existing || {
+      kakaoPlaceId: place.id,
+      name: place.place_name,
+      address: place.road_address_name || place.address_name,
+      category: mapCategory(place.category_name),
+      lat,
+      lng,
+    };
 
-    // 로그인한 경우만 등록 시도
-    if (isLoggedIn) {
-      try {
-        await restaurantsApi.create({
-          kakaoPlaceId: place.id,
-          name: place.place_name,
-          address: place.road_address_name || place.address_name,
-          category: mapCategory(place.category_name),
-          lat,
-          lng,
-        });
-      } catch (err) {
-        if (err.response?.status !== 409) {
-          // 등록 실패 시 선택만 진행
-        }
-      }
-
-      const res = await restaurantsApi.list('').catch(() => null);
-      if (res?.data) {
-        setList(res.data);
-        const found = res.data.find((r) => r.kakaoPlaceId === place.id);
-        if (found) {
-          setSelected(found);
-          if (isMobile && sidebarOpen) onSidebarClose();
-          clearSearch();
-          return;
-        }
-      }
-    }
-
-    // 비로그인 or 등록 실패: 임시 객체로 패널 표시
-    setSelected({ kakaoPlaceId: place.id, name: place.place_name, address: place.road_address_name || place.address_name, category: mapCategory(place.category_name), lat, lng });
+    setSelected(restaurant);
+    addToRecent(restaurant);
     if (isMobile && sidebarOpen) onSidebarClose();
     clearSearch();
   };
 
   const handleSelect = (r) => {
     setSelected(r);
+    addToRecent(r);
     if (r?.lat && r?.lng) setFlyTo({ lat: r.lat, lng: r.lng });
     if (isMobile && sidebarOpen) onSidebarClose();
   };
 
   const handleToggleBookmark = async () => {
     if (!isLoggedIn) return alert('로그인이 필요합니다.');
-    if (!selected?.id) return;
+
+    let target = selected;
+
+    // DB에 없으면 먼저 등록
+    if (!target?.id) {
+      try {
+        const res = await restaurantsApi.create({
+          kakaoPlaceId: target.kakaoPlaceId,
+          name: target.name,
+          address: target.address,
+          category: target.category,
+          lat: target.lat,
+          lng: target.lng,
+        });
+        target = { ...target, id: res.data.id };
+      } catch (err) {
+        if (err.response?.status === 409) {
+          // 이미 다른 사용자가 등록한 경우 목록에서 찾기
+          const listRes = await restaurantsApi.list('').catch(() => null);
+          if (listRes?.data) {
+            setList(listRes.data);
+            const found = listRes.data.find((r) => r.kakaoPlaceId === target.kakaoPlaceId);
+            if (found) target = found;
+          }
+        }
+        if (!target?.id) return;
+      }
+      setSelected(target);
+      addToRecent(target);
+    }
+
     try {
-      const res = await bookmarksApi.toggle(selected.id);
-      const kakaoId = selected.kakaoPlaceId;
+      const res = await bookmarksApi.toggle(target.id);
+      const kakaoId = target.kakaoPlaceId;
       if (res.data.bookmarked) {
         setBookmarkedIds((prev) => new Set([...prev, kakaoId]));
       } else {
         setBookmarkedIds((prev) => { const next = new Set(prev); next.delete(kakaoId); return next; });
       }
+      loadList();
     } catch {}
   };
 
@@ -285,28 +321,50 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
               ))
             )
 
-          /* DB 맛집 리스트 */
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 gap-2">
-              <p className="text-xs text-gray-400">
-                {boundsFilter ? '지도 범위 내 맛집이 없습니다' : '맛집이 없습니다'}
-              </p>
-              {boundsFilter && (
-                <button onClick={() => setBoundsFilter(false)} className="text-[11px] text-black underline">
-                  전체 보기
-                </button>
-              )}
-            </div>
+          /* 최근 본 식당 리스트 */
           ) : (
-            filtered.map((r) => (
-              <RestaurantCard
-                key={r.id}
-                restaurant={r}
-                variant="list"
-                isSelected={selected?.id === r.id}
-                onSelect={handleSelect}
-              />
-            ))
+            <>
+              {recentList.length > 0 && (
+                <div className="px-6 py-2.5 flex items-center justify-between border-b border-gray-100">
+                  <span className="text-[11px] text-gray-400 tracking-[0.06em] uppercase">Recently Viewed</span>
+                  <button
+                    onClick={clearRecent}
+                    className="text-[11px] text-gray-300 hover:text-black transition-colors"
+                    aria-label="최근 본 목록 전체 삭제"
+                  >
+                    ✕ 전체 삭제
+                  </button>
+                </div>
+              )}
+              {recentFiltered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 gap-2">
+                  <p className="text-xs text-gray-400">
+                    {recentList.length > 0
+                      ? (boundsFilter ? '지도 범위 내 맛집이 없습니다' : '해당 카테고리 맛집이 없습니다')
+                      : '식당을 클릭하면 여기에 표시됩니다'}
+                  </p>
+                  {boundsFilter && recentList.length > 0 && (
+                    <button onClick={() => setBoundsFilter(false)} className="text-[11px] text-black underline">
+                      전체 보기
+                    </button>
+                  )}
+                </div>
+              ) : (
+                recentFiltered.map((r) => (
+                  <RestaurantCard
+                    key={r.kakaoPlaceId || r.id}
+                    restaurant={r}
+                    variant="list"
+                    isSelected={
+                      selected?.kakaoPlaceId
+                        ? selected.kakaoPlaceId === r.kakaoPlaceId
+                        : selected?.id === r.id
+                    }
+                    onSelect={handleSelect}
+                  />
+                ))
+              )}
+            </>
           )}
         </div>
       </div>
@@ -388,24 +446,20 @@ function DetailPanel({ restaurant, onClose, onNavigate, isBookmarked, onToggleBo
           {likeCount != null && <DetailRow label="좋아요" value={`${likeCount}개`} />}
         </div>
         <div className={`px-6 pb-6 ${compact ? 'pt-4' : 'mt-auto pt-4'}`}>
-          {restaurant.id ? (
-            <div className="flex gap-2">
-              <button
-                onClick={onToggleBookmark}
-                aria-label={isBookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
-                className="w-12 flex-shrink-0 border border-gray-300 flex items-center justify-center text-[18px] hover:border-black transition-colors"
-              >
-                {isBookmarked ? '★' : '☆'}
-              </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onToggleBookmark}
+              aria-label={isBookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+              className={`${restaurant.id ? 'w-12 flex-shrink-0' : 'flex-1'} border border-gray-300 flex items-center justify-center text-[18px] hover:border-black transition-colors py-4`}
+            >
+              {isBookmarked ? '★' : '☆'}
+            </button>
+            {restaurant.id && (
               <button onClick={onNavigate} className="flex-1 bg-black text-white text-[12px] font-semibold tracking-[0.15em] py-4 hover:bg-gray-900 transition-colors">
                 상세 보기
               </button>
-            </div>
-          ) : (
-            <p className="text-center text-[12px] text-gray-400 py-4">
-              로그인 후 저장된 맛집만 상세보기 가능합니다
-            </p>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </>
