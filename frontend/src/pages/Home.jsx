@@ -155,6 +155,20 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
     if (isMobile && sidebarOpen) onSidebarClose();
   };
 
+  const handleToggleBookmark = async () => {
+    if (!isLoggedIn) return alert('로그인이 필요합니다.');
+    if (!selected?.id) return;
+    try {
+      const res = await bookmarksApi.toggle(selected.id);
+      const kakaoId = selected.kakaoPlaceId;
+      if (res.data.bookmarked) {
+        setBookmarkedIds((prev) => new Set([...prev, kakaoId]));
+      } else {
+        setBookmarkedIds((prev) => { const next = new Set(prev); next.delete(kakaoId); return next; });
+      }
+    } catch {}
+  };
+
   return (
     <div className="flex h-full relative overflow-hidden">
 
@@ -316,6 +330,8 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
               restaurant={selected}
               onClose={() => setSelected(null)}
               onNavigate={() => navigate(`/restaurants/${selected.id}`)}
+              isBookmarked={bookmarkedIds.has(selected.kakaoPlaceId)}
+              onToggleBookmark={handleToggleBookmark}
             />
           </div>
         )}
@@ -328,6 +344,8 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
             restaurant={selected}
             onClose={() => setSelected(null)}
             onNavigate={() => navigate(`/restaurants/${selected.id}`)}
+            isBookmarked={bookmarkedIds.has(selected.kakaoPlaceId)}
+            onToggleBookmark={handleToggleBookmark}
             compact
           />
         </div>
@@ -336,7 +354,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
   );
 }
 
-function DetailPanel({ restaurant, onClose, onNavigate, compact }) {
+function DetailPanel({ restaurant, onClose, onNavigate, isBookmarked, onToggleBookmark, compact }) {
   const { name, category, address, avgRating, likeCount } = restaurant;
   return (
     <>
@@ -370,9 +388,18 @@ function DetailPanel({ restaurant, onClose, onNavigate, compact }) {
         </div>
         <div className={`px-6 pb-6 ${compact ? 'pt-4' : 'mt-auto pt-4'}`}>
           {restaurant.id ? (
-            <button onClick={onNavigate} className="w-full bg-black text-white text-[12px] font-semibold tracking-[0.15em] py-4 hover:bg-gray-900 transition-colors">
-              상세 보기
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={onToggleBookmark}
+                aria-label={isBookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
+                className="w-12 flex-shrink-0 border border-gray-300 flex items-center justify-center text-[18px] hover:border-black transition-colors"
+              >
+                {isBookmarked ? '★' : '☆'}
+              </button>
+              <button onClick={onNavigate} className="flex-1 bg-black text-white text-[12px] font-semibold tracking-[0.15em] py-4 hover:bg-gray-900 transition-colors">
+                상세 보기
+              </button>
+            </div>
           ) : (
             <p className="text-center text-[12px] text-gray-400 py-4">
               로그인 후 저장된 맛집만 상세보기 가능합니다
