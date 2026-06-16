@@ -3,11 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import Map from '../components/Map';
 import RestaurantCard from '../components/RestaurantCard';
 import { restaurants as restaurantsApi } from '../api';
-import { useAuth } from '../store/authStore';
 
 const CATEGORIES = ['전체', '한식', '일식', '중식', '양식', '카페', '기타'];
 
-// 카카오 카테고리명 → 앱 카테고리
 const mapCategory = (categoryName = '') => {
   if (categoryName.includes('한식')) return '한식';
   if (categoryName.includes('일식') || categoryName.includes('초밥') || categoryName.includes('스시')) return '일식';
@@ -19,25 +17,24 @@ const mapCategory = (categoryName = '') => {
 
 export default function Home({ sidebarOpen, onSidebarClose }) {
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
 
   const [list, setList] = useState([]);
-  const [keyword, setKeyword] = useState('');
-  const [inputVal, setInputVal] = useState('');
   const [category, setCategory] = useState('전체');
   const [selected, setSelected] = useState(null);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+  // 카카오 검색
+  const [inputVal, setInputVal] = useState('');
+  const [searchMode, setSearchMode] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [kakaoResults, setKakaoResults] = useState([]);
 
   // 지도 범위 필터
   const [mapBounds, setMapBounds] = useState(null);
   const [boundsFilter, setBoundsFilter] = useState(false);
 
-  // 맛집 등록
-  const [showRegister, setShowRegister] = useState(false);
-  const [registerQuery, setRegisterQuery] = useState('');
-  const [registerResults, setRegisterResults] = useState([]);
-  const [registerLoading, setRegisterLoading] = useState(false);
-  const [registeringId, setRegisteringId] = useState(null);
+  // 지도 이동
+  const [flyTo, setFlyTo] = useState(null);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -46,10 +43,10 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
   }, []);
 
   const loadList = () => {
-    restaurantsApi.list(keyword).then((res) => setList(res.data)).catch(() => {});
+    restaurantsApi.list('').then((res) => setList(res.data)).catch(() => {});
   };
 
-  useEffect(() => { loadList(); }, [keyword]);
+  useEffect(() => { loadList(); }, []);
 
   const inBounds = (r) => {
     if (!boundsFilter || !mapBounds || !r.lat || !r.lng) return true;
@@ -63,53 +60,68 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
     .filter((r) => category === '전체' || r.category === category)
     .filter(inBounds);
 
+  // 카카오 검색 실행
   const handleSearch = (e) => {
     e.preventDefault();
-    setKeyword(inputVal.trim());
-  };
+    const q = inputVal.trim();
+    if (!q) { clearSearch(); return; }
+    if (!window.kakao?.maps?.services) return;
 
-  const handleSelect = (r) => {
-    setSelected(r);
-    if (isMobile && sidebarOpen) onSidebarClose();
-  };
+    setSearchLoading(true);
+    setSearchMode(true);
+    setKakaoResults([]);
 
-  // 카카오 Places 검색
-  const handlePlaceSearch = (e) => {
-    e.preventDefault();
-    if (!registerQuery.trim() || !window.kakao?.maps?.services) return;
-    setRegisterLoading(true);
-    setRegisterResults([]);
     const ps = new window.kakao.maps.services.Places();
-    ps.keywordSearch(registerQuery, (result, status) => {
-      setRegisterLoading(false);
+    ps.keywordSearch(q, (result, status) => {
+      setSearchLoading(false);
       if (status === window.kakao.maps.services.Status.OK) {
-        setRegisterResults(result.slice(0, 5));
+        setKakaoResults(result.slice(0, 10));
       }
-    }, { category_group_code: '' }); // 음식점 전체
+    });
   };
 
-  const handleRegister = async (place) => {
-    if (!isLoggedIn) return alert('로그인이 필요합니다.');
-    setRegisteringId(place.id);
+  const clearSearch = () => {
+    setInputVal('');
+    setSearchMode(false);
+    setKakaoResults([]);
+  };
+
+  // 카카오 결과 클릭 → DB 등록 → 선택
+  const handleKakaoResultClick = async (place) => {
+    const lat = parseFloat(place.y);
+    const lng = parseFloat(place.x);
+    setFlyTo({ lat, lng });
+
     try {
       await restaurantsApi.create({
         kakaoPlaceId: place.id,
         name: place.place_name,
         address: place.road_address_name || place.address_name,
         category: mapCategory(place.category_name),
-        lat: parseFloat(place.y),
-        lng: parseFloat(place.x),
+        lat,
+        lng,
       });
-      loadList();
-      setShowRegister(false);
-      setRegisterQuery('');
-      setRegisterResults([]);
     } catch (err) {
-      if (err.response?.status === 409) alert('이미 등록된 맛집입니다.');
-      else alert('등록 실패. 다시 시도해주세요.');
-    } finally {
-      setRegisteringId(null);
+      if (err.response?.status !== 409) return;
     }
+
+    // 리스트 갱신 후 해당 식당 선택
+    const res = await restaurantsApi.list('').catch(() => null);
+    if (res?.data) {
+      setList(res.data);
+      const found = res.data.find((r) => r.kakaoPlaceId === place.id);
+      if (found) {
+        setSelected(found);
+        if (isMobile && sidebarOpen) onSidebarClose();
+      }
+    }
+
+    clearSearch();
+  };
+
+  const handleSelect = (r) => {
+    setSelected(r);
+    if (isMobile && sidebarOpen) onSidebarClose();
   };
 
   return (
@@ -133,108 +145,103 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
       >
         {/* 검색 */}
         <div className="px-6 pt-9 pb-5">
-          <form onSubmit={handleSearch}>
+          <form onSubmit={handleSearch} className="relative">
             <input
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
               placeholder="음식 종류나 식당 이름 검색..."
-              className="w-full border-b border-gray-300 pb-3 text-[13px] bg-transparent outline-none placeholder-gray-400 focus:border-black transition-colors"
+              className="w-full border-b border-gray-300 pb-3 text-[13px] bg-transparent outline-none placeholder-gray-400 focus:border-black transition-colors pr-6"
             />
+            {inputVal && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="absolute right-0 bottom-3 text-gray-300 hover:text-black transition-colors text-[12px]"
+              >
+                ✕
+              </button>
+            )}
           </form>
         </div>
 
-        {/* 카테고리 + 등록 버튼 */}
-        <div className="px-6 pb-3 flex items-center gap-2">
-          <div className="flex gap-2 overflow-x-auto scrollbar-none flex-nowrap flex-1 min-w-0">
-            {CATEGORIES.map((c) => (
+        {/* 카테고리 필터 + 범위 필터 (검색 모드가 아닐 때만) */}
+        {!searchMode && (
+          <>
+            <div className="px-6 pb-3 flex gap-2 overflow-x-auto scrollbar-none flex-nowrap">
+              {CATEGORIES.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCategory(c)}
+                  className={`text-[11px] px-3.5 py-[5px] border font-semibold tracking-[0.08em] transition-colors whitespace-nowrap flex-shrink-0 ${
+                    category === c
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-black border-gray-300 hover:border-black'
+                  }`}
+                >
+                  {c === '전체' ? 'NEARBY' : c.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            <div className="px-6 pb-4">
               <button
-                key={c}
-                onClick={() => setCategory(c)}
-                className={`text-[11px] px-3.5 py-[5px] border font-semibold tracking-[0.08em] transition-colors whitespace-nowrap flex-shrink-0 ${
-                  category === c
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white text-black border-gray-300 hover:border-black'
+                onClick={() => setBoundsFilter((v) => !v)}
+                className={`text-[11px] flex items-center gap-1.5 transition-colors ${
+                  boundsFilter ? 'text-black font-semibold' : 'text-gray-400 hover:text-black'
                 }`}
               >
-                {c === '전체' ? 'NEARBY' : c.toUpperCase()}
+                <span className={`w-3 h-3 border flex items-center justify-center text-[9px] ${boundsFilter ? 'bg-black border-black text-white' : 'border-gray-300'}`}>
+                  {boundsFilter ? '✓' : ''}
+                </span>
+                지도 범위 내 맛집만
               </button>
-            ))}
-          </div>
-          {/* 맛집 등록 버튼 */}
-          <button
-            onClick={() => setShowRegister((v) => !v)}
-            title="카카오 검색으로 맛집 등록"
-            className={`flex-shrink-0 w-7 h-7 border flex items-center justify-center text-[16px] transition-colors ${
-              showRegister ? 'bg-black text-white border-black' : 'border-gray-300 text-gray-400 hover:border-black hover:text-black'
-            }`}
-          >
-            +
-          </button>
-        </div>
-
-        {/* 지도 범위 필터 토글 */}
-        <div className="px-6 pb-4">
-          <button
-            onClick={() => setBoundsFilter((v) => !v)}
-            className={`text-[11px] flex items-center gap-1.5 transition-colors ${
-              boundsFilter ? 'text-black font-semibold' : 'text-gray-400 hover:text-black'
-            }`}
-          >
-            <span className={`w-3 h-3 border flex items-center justify-center text-[9px] ${boundsFilter ? 'bg-black border-black text-white' : 'border-gray-300'}`}>
-              {boundsFilter ? '✓' : ''}
-            </span>
-            지도 범위 내 맛집만
-          </button>
-        </div>
-
-        {/* 카카오 검색 등록 패널 */}
-        {showRegister && (
-          <div className="mx-6 mb-4 border border-gray-200 p-4">
-            <p className="text-[11px] text-gray-400 mb-3 tracking-wider">카카오 검색으로 맛집 등록</p>
-            <form onSubmit={handlePlaceSearch} className="flex gap-2 mb-3">
-              <input
-                value={registerQuery}
-                onChange={(e) => setRegisterQuery(e.target.value)}
-                placeholder="장소 이름 검색..."
-                className="flex-1 border-b border-gray-300 pb-1.5 text-[12px] bg-transparent outline-none placeholder-gray-400 focus:border-black transition-colors min-w-0"
-              />
-              <button
-                type="submit"
-                disabled={registerLoading}
-                className="text-[11px] px-3 py-1 bg-black text-white disabled:opacity-50 flex-shrink-0"
-              >
-                {registerLoading ? '…' : '검색'}
-              </button>
-            </form>
-
-            {registerResults.length > 0 && (
-              <div className="space-y-px">
-                {registerResults.map((place) => (
-                  <div key={place.id} className="flex items-start justify-between gap-2 py-2 border-b border-gray-100 last:border-0">
-                    <div className="min-w-0">
-                      <p className="text-[12px] font-medium text-black truncate">{place.place_name}</p>
-                      <p className="text-[11px] text-gray-400 truncate">{place.road_address_name || place.address_name}</p>
-                    </div>
-                    <button
-                      onClick={() => handleRegister(place)}
-                      disabled={registeringId === place.id}
-                      className="flex-shrink-0 text-[10px] border border-gray-300 px-2 py-1 hover:border-black transition-colors disabled:opacity-50"
-                    >
-                      {registeringId === place.id ? '…' : '등록'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            </div>
+          </>
         )}
 
-        {/* 맛집 리스트 */}
+        {/* 리스트 영역 */}
         <div className="flex-1 overflow-y-auto border-t border-gray-200 scrollbar-none">
-          {filtered.length === 0 ? (
+
+          {/* 카카오 검색 결과 */}
+          {searchMode ? (
+            searchLoading ? (
+              <div className="flex items-center justify-center h-20">
+                <p className="text-xs text-gray-400">검색 중...</p>
+              </div>
+            ) : kakaoResults.length === 0 ? (
+              <div className="flex items-center justify-center h-20">
+                <p className="text-xs text-gray-400">검색 결과가 없습니다</p>
+              </div>
+            ) : (
+              kakaoResults.map((place) => (
+                <div
+                  key={place.id}
+                  onClick={() => handleKakaoResultClick(place)}
+                  className="px-6 py-[18px] border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-baseline gap-1 mb-[6px] min-w-0">
+                    <span className="font-semibold text-[15px] leading-snug text-black truncate">{place.place_name}</span>
+                    <span className="text-[13px] text-gray-400 flex-shrink-0 font-light">/{mapCategory(place.category_name)}</span>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-[12px] text-gray-400 truncate">{place.road_address_name || place.address_name}</span>
+                    {place.distance && (
+                      <span className="text-[12px] text-gray-300 flex-shrink-0">
+                        {place.distance >= 1000
+                          ? `${(place.distance / 1000).toFixed(1)}km`
+                          : `${place.distance}m`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )
+
+          /* DB 맛집 리스트 */
+          ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 gap-2">
               <p className="text-xs text-gray-400">
-                {boundsFilter ? '지도 영역 내 맛집이 없습니다' : '검색 결과가 없습니다'}
+                {boundsFilter ? '지도 범위 내 맛집이 없습니다' : '맛집이 없습니다'}
               </p>
               {boundsFilter && (
                 <button onClick={() => setBoundsFilter(false)} className="text-[11px] text-black underline">
@@ -263,6 +270,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
             restaurants={filtered}
             onMarkerClick={handleSelect}
             onBoundsChange={setMapBounds}
+            flyTo={flyTo}
           />
         </div>
 
