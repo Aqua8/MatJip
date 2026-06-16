@@ -36,13 +36,13 @@ export default function Map({ restaurants = [], onMarkerClick, onBoundsChange, f
         });
         mapRef.current = map;
 
-        // 마커 클러스터러
+        // 마커 클러스터러 (minLevel 높여서 기본 뷰에서 개별 마커 클릭 가능하게)
         clustererRef.current = new window.kakao.maps.MarkerClusterer({
           map,
           averageCenter: true,
-          minLevel: 7,
+          minLevel: 10,
           gridSize: 60,
-          minClusterSize: 2,
+          minClusterSize: 3,
         });
 
         // idle 이벤트 → 위치 캐시 저장 + 지도 범위 전달
