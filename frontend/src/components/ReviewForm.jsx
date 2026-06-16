@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import StarRating from './StarRating';
 import { reviews as reviewsApi, upload } from '../api';
+import { toast } from '../store/toastStore';
 
 export default function ReviewForm({ restaurantId, onSuccess }) {
   const [rating, setRating] = useState(0);
@@ -17,7 +18,7 @@ export default function ReviewForm({ restaurantId, onSuccess }) {
       const res = await upload.image(file);
       setImageUrls((prev) => [...prev, res.data.url]);
     } catch {
-      alert('이미지 업로드 실패');
+      toast('이미지 업로드에 실패했습니다.');
     } finally {
       setUploading(false);
     }
@@ -25,8 +26,8 @@ export default function ReviewForm({ restaurantId, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (rating === 0) return alert('별점을 선택해주세요.');
-    if (!content.trim()) return alert('내용을 입력해주세요.');
+    if (rating === 0) return toast('별점을 선택해주세요.');
+    if (!content.trim()) return toast('내용을 입력해주세요.');
     setSubmitting(true);
     try {
       await reviewsApi.create(restaurantId, { rating, content, imageUrls });
@@ -35,7 +36,7 @@ export default function ReviewForm({ restaurantId, onSuccess }) {
       setImageUrls([]);
       onSuccess?.();
     } catch {
-      alert('리뷰 작성 실패');
+      toast('리뷰 작성에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
