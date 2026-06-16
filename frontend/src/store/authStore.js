@@ -35,5 +35,10 @@ export function useAuth() {
       localStorage.removeItem('nickname');
       notify();
     },
+    updateNickname(nickname) {
+      _nickname = nickname;
+      localStorage.setItem('nickname', nickname);
+      notify();
+    },
   };
 }

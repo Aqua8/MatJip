@@ -31,6 +31,11 @@ export const userReviews = {
   list: () => api.get('/api/users/me/reviews'),
 };
 
+export const user = {
+  updateNickname: (nickname) => api.put('/api/users/me/nickname', { nickname }),
+  updatePassword: (currentPassword, newPassword) => api.put('/api/users/me/password', { currentPassword, newPassword }),
+};
+
 export const upload = {
   image: (file) => {
     const form = new FormData();
