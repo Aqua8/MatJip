@@ -104,52 +104,49 @@ export default function MyPage() {
         <div className="max-w-md mx-auto px-4 md:px-8 py-8">
           {/* 프로필 */}
           <div className="border border-gray-200 p-6 mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="font-bold text-base text-black">{nickname}</p>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex-1 min-w-0">
+                {nicknameEdit ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={newNickname}
+                      onChange={(e) => setNewNickname(e.target.value)}
+                      className="flex-1 min-w-0 border-b border-gray-300 py-0.5 text-base font-bold bg-transparent outline-none focus:border-black transition-colors"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleNicknameSave}
+                      disabled={nicknameSaving || !newNickname.trim()}
+                      className="text-[11px] px-2.5 py-1 bg-black text-white hover:bg-gray-800 transition-colors disabled:opacity-40 flex-shrink-0"
+                    >
+                      {nicknameSaving ? '...' : '저장'}
+                    </button>
+                    <button
+                      onClick={() => { setNicknameEdit(false); setNewNickname(''); }}
+                      className="text-[11px] text-gray-400 hover:text-black transition-colors flex-shrink-0"
+                    >
+                      취소
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline gap-2">
+                    <p className="font-bold text-base text-black">{nickname}</p>
+                    <button
+                      onClick={() => { setNicknameEdit(true); setNewNickname(nickname); }}
+                      className="text-[11px] text-gray-400 hover:text-black transition-colors"
+                    >
+                      수정
+                    </button>
+                  </div>
+                )}
                 <p className="text-xs text-gray-400 mt-0.5">맛집 탐험가</p>
               </div>
               <button
                 onClick={() => { logout(); navigate('/'); }}
-                className="text-xs border border-gray-300 px-4 py-2 hover:border-black transition-colors tracking-wide"
+                className="text-xs border border-gray-300 px-4 py-2 hover:border-black transition-colors tracking-wide flex-shrink-0"
               >
                 로그아웃
               </button>
-            </div>
-
-            {/* 닉네임 변경 */}
-            <div className="border-t border-gray-100 pt-4">
-              {nicknameEdit ? (
-                <div className="flex gap-2 items-center">
-                  <input
-                    value={newNickname}
-                    onChange={(e) => setNewNickname(e.target.value)}
-                    placeholder="새 닉네임"
-                    className="flex-1 border-b border-gray-300 py-1.5 text-sm bg-transparent outline-none focus:border-black transition-colors"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleNicknameSave}
-                    disabled={nicknameSaving || !newNickname.trim()}
-                    className="text-xs px-3 py-1.5 bg-black text-white hover:bg-gray-800 transition-colors disabled:opacity-40"
-                  >
-                    {nicknameSaving ? '저장 중...' : '저장'}
-                  </button>
-                  <button
-                    onClick={() => { setNicknameEdit(false); setNewNickname(''); }}
-                    className="text-xs text-gray-400 hover:text-black transition-colors"
-                  >
-                    취소
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => { setNicknameEdit(true); setNewNickname(nickname); }}
-                  className="text-xs text-gray-400 hover:text-black transition-colors"
-                >
-                  닉네임 변경
-                </button>
-              )}
             </div>
 
             {/* 비밀번호 변경 */}
