@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 
-// variant: 'list' | 'grid' | 'compact'
 export default function RestaurantCard({ restaurant, variant = 'grid', isSelected, onSelect }) {
   const navigate = useNavigate();
   const { id, name, address, category, likeCount, avgRating } = restaurant;
