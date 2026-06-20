@@ -15,8 +15,9 @@ public class RestaurantResponse {
     private long likeCount;
     private Double avgRating;
     private boolean liked;
+    private String thumbnailUrl;
 
-    public RestaurantResponse(Restaurant r, long likeCount, Double avgRating, boolean liked) {
+    public RestaurantResponse(Restaurant r, long likeCount, Double avgRating, boolean liked, String thumbnailUrl) {
         this.id = r.getId();
         this.kakaoPlaceId = r.getKakaoPlaceId();
         this.name = r.getName();
@@ -27,5 +28,6 @@ public class RestaurantResponse {
         this.likeCount = likeCount;
         this.avgRating = avgRating;
         this.liked = liked;
+        this.thumbnailUrl = thumbnailUrl;
     }
 }

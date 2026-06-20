@@ -19,6 +19,7 @@ public class BookmarkService {
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
     private final ReviewRepository reviewRepository;
+    private final ReviewImageRepository reviewImageRepository;
 
     @Transactional(readOnly = true)
     public List<RestaurantResponse> getBookmarks(String email) {
@@ -27,7 +28,9 @@ public class BookmarkService {
                 .map(b -> new RestaurantResponse(b.getRestaurant(),
                         likeRepository.countByRestaurantId(b.getRestaurant().getId()),
                         reviewRepository.avgRatingByRestaurantId(b.getRestaurant().getId()),
-                        likeRepository.existsByUserIdAndRestaurantId(user.getId(), b.getRestaurant().getId())))
+                        likeRepository.existsByUserIdAndRestaurantId(user.getId(), b.getRestaurant().getId()),
+                        reviewImageRepository.findFirstByReview_Restaurant_IdOrderByIdDesc(b.getRestaurant().getId())
+                                .map(img -> img.getImageUrl()).orElse(null)))
                 .collect(Collectors.toList());
     }
 

@@ -429,12 +429,16 @@ function DetailPanel({ restaurant, onClose, onNavigate, isBookmarked, onToggleBo
   return (
     <>
       {!compact && (
-        <div className="relative bg-gray-100 h-[200px] flex-shrink-0 flex items-center justify-center">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <path d="M21 15l-5-5L5 21"/>
-          </svg>
+        <div className="relative bg-gray-100 h-[200px] flex-shrink-0 flex items-center justify-center overflow-hidden">
+          {restaurant.thumbnailUrl ? (
+            <img src={restaurant.thumbnailUrl} alt={name} className="w-full h-full object-cover" />
+          ) : (
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 21"/>
+            </svg>
+          )}
           <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-black transition-colors text-[11px]" aria-label="닫기">✕</button>
         </div>
       )}
