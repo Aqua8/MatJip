@@ -6,6 +6,8 @@ import com.matjip.backend.service.RestaurantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,8 +24,10 @@ public class RestaurantController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RestaurantResponse> get(@PathVariable Long id) {
-        return ResponseEntity.ok(restaurantService.getById(id));
+    public ResponseEntity<RestaurantResponse> get(@PathVariable Long id,
+                                                   @AuthenticationPrincipal UserDetails user) {
+        String email = user != null ? user.getUsername() : null;
+        return ResponseEntity.ok(restaurantService.getById(id, email));
     }
 
     @PostMapping

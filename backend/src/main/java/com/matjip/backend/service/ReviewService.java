@@ -46,6 +46,11 @@ public class ReviewService {
             throw new AccessDeniedException("권한이 없습니다.");
         }
         review.update(req.getRating(), req.getContent());
+        reviewImageRepository.deleteAll(review.getImages());
+        review.getImages().clear();
+        if (req.getImageUrls() != null) {
+            req.getImageUrls().forEach(url -> reviewImageRepository.save(new ReviewImage(review, url)));
+        }
         return new ReviewResponse(review);
     }
 

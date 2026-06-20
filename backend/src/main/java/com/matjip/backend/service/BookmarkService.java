@@ -26,7 +26,8 @@ public class BookmarkService {
         return bookmarkRepository.findByUserId(user.getId()).stream()
                 .map(b -> new RestaurantResponse(b.getRestaurant(),
                         likeRepository.countByRestaurantId(b.getRestaurant().getId()),
-                        reviewRepository.avgRatingByRestaurantId(b.getRestaurant().getId())))
+                        reviewRepository.avgRatingByRestaurantId(b.getRestaurant().getId()),
+                        likeRepository.existsByUserIdAndRestaurantId(user.getId(), b.getRestaurant().getId())))
                 .collect(Collectors.toList());
     }
 

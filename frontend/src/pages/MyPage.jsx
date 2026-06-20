@@ -89,8 +89,8 @@ export default function MyPage() {
       await auth.signup(form);
       toast('회원가입 완료! 로그인해주세요.', 'success');
       setMode('login');
-    } catch {
-      toast('회원가입 실패. 이미 사용 중인 이메일일 수 있습니다.');
+    } catch (err) {
+      toast(err.response?.data?.message || '회원가입 실패. 이미 사용 중인 이메일일 수 있습니다.');
     } finally {
       setLoading(false);
     }
@@ -231,9 +231,17 @@ export default function MyPage() {
             <div className="space-y-px">
               {myReviews.map((r) => (
                 <div key={r.id} className="border border-gray-200 p-5">
-                  <div className="flex justify-between items-center mb-3">
-                    <StarRating value={r.rating} />
+                  <div className="flex justify-between items-center mb-2">
+                    <button
+                      onClick={() => navigate(`/restaurants/${r.restaurantId}`)}
+                      className="text-xs font-semibold text-black hover:underline"
+                    >
+                      {r.restaurantName}
+                    </button>
                     <span className="text-xs text-gray-300">{r.createdAt?.slice(0, 10)}</span>
+                  </div>
+                  <div className="mb-2">
+                    <StarRating value={r.rating} />
                   </div>
                   <p className="text-sm text-gray-600 leading-relaxed">{r.content}</p>
                 </div>

@@ -18,12 +18,14 @@ public class BookmarkController {
 
     @GetMapping("/api/bookmarks")
     public ResponseEntity<List<RestaurantResponse>> list(@AuthenticationPrincipal UserDetails user) {
+        if (user == null) return ResponseEntity.status(401).build();
         return ResponseEntity.ok(bookmarkService.getBookmarks(user.getUsername()));
     }
 
     @PostMapping("/api/restaurants/{id}/bookmarks")
     public ResponseEntity<Map<String, Boolean>> toggle(@PathVariable Long id,
                                                         @AuthenticationPrincipal UserDetails user) {
+        if (user == null) return ResponseEntity.status(401).build();
         return ResponseEntity.ok(bookmarkService.toggle(id, user.getUsername()));
     }
 }

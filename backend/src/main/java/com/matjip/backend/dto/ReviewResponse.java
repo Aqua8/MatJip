@@ -15,6 +15,8 @@ public class ReviewResponse {
     private String content;
     private List<String> imageUrls;
     private LocalDateTime createdAt;
+    private Long restaurantId;
+    private String restaurantName;
 
     public ReviewResponse(Review r) {
         this.id = r.getId();
@@ -24,5 +26,7 @@ public class ReviewResponse {
         this.content = r.getContent();
         this.imageUrls = r.getImages().stream().map(img -> img.getImageUrl()).collect(Collectors.toList());
         this.createdAt = r.getCreatedAt();
+        this.restaurantId = r.getRestaurant().getId();
+        this.restaurantName = r.getRestaurant().getName();
     }
 }

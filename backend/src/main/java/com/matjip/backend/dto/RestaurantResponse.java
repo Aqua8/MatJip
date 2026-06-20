@@ -14,8 +14,9 @@ public class RestaurantResponse {
     private Double lng;
     private long likeCount;
     private Double avgRating;
+    private boolean liked;
 
-    public RestaurantResponse(Restaurant r, long likeCount, Double avgRating) {
+    public RestaurantResponse(Restaurant r, long likeCount, Double avgRating, boolean liked) {
         this.id = r.getId();
         this.kakaoPlaceId = r.getKakaoPlaceId();
         this.name = r.getName();
@@ -25,5 +26,6 @@ public class RestaurantResponse {
         this.lng = r.getLng();
         this.likeCount = likeCount;
         this.avgRating = avgRating;
+        this.liked = liked;
     }
 }

@@ -14,6 +14,8 @@ export const restaurants = {
 export const reviews = {
   list: (restaurantId) => api.get(`/api/restaurants/${restaurantId}/reviews`),
   create: (restaurantId, data) => api.post(`/api/restaurants/${restaurantId}/reviews`, data),
+  update: (id, data) => api.put(`/api/reviews/${id}`, data),
+  delete: (id) => api.delete(`/api/reviews/${id}`),
 };
 
 export const likes = {
