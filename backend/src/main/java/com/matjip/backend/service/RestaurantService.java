@@ -6,6 +6,7 @@ import com.matjip.backend.dto.RestaurantRequest;
 import com.matjip.backend.dto.RestaurantResponse;
 import com.matjip.backend.repository.LikeRepository;
 import com.matjip.backend.repository.RestaurantRepository;
+import com.matjip.backend.repository.ReviewImageRepository;
 import com.matjip.backend.repository.ReviewRepository;
 import com.matjip.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,14 @@ public class RestaurantService {
     private final RestaurantRepository restaurantRepository;
     private final LikeRepository likeRepository;
     private final ReviewRepository reviewRepository;
+    private final ReviewImageRepository reviewImageRepository;
     private final UserRepository userRepository;
+
+    private String thumbnailOf(Long restaurantId) {
+        return reviewImageRepository.findFirstByReview_Restaurant_IdOrderByIdDesc(restaurantId)
+                .map(img -> img.getImageUrl())
+                .orElse(null);
+    }
 
     public List<RestaurantResponse> search(String keyword) {
         List<Restaurant> list = (keyword == null || keyword.isBlank())
@@ -29,7 +37,8 @@ public class RestaurantService {
                 .map(r -> new RestaurantResponse(r,
                         likeRepository.countByRestaurantId(r.getId()),
                         reviewRepository.avgRatingByRestaurantId(r.getId()),
-                        false))
+                        false,
+                        thumbnailOf(r.getId())))
                 .collect(Collectors.toList());
     }
 
@@ -46,7 +55,8 @@ public class RestaurantService {
         return new RestaurantResponse(r,
                 likeRepository.countByRestaurantId(r.getId()),
                 reviewRepository.avgRatingByRestaurantId(r.getId()),
-                liked);
+                liked,
+                thumbnailOf(r.getId()));
     }
 
     public RestaurantResponse register(RestaurantRequest req) {
@@ -57,6 +67,7 @@ public class RestaurantService {
         return new RestaurantResponse(restaurant,
                 likeRepository.countByRestaurantId(restaurant.getId()),
                 reviewRepository.avgRatingByRestaurantId(restaurant.getId()),
-                false);
+                false,
+                thumbnailOf(restaurant.getId()));
     }
 }
