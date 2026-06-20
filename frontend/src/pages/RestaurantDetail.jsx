@@ -9,7 +9,7 @@ import { toast } from '../store/toastStore';
 export default function RestaurantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, nickname } = useAuth();
 
   const [restaurant, setRestaurant] = useState(null);
   const [reviewList, setReviewList] = useState([]);
@@ -17,11 +17,13 @@ export default function RestaurantDetail() {
   const [likeCount, setLikeCount] = useState(0);
   const [bookmarked, setBookmarked] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState(null);
 
   useEffect(() => {
     restaurantsApi.get(id).then((res) => {
       setRestaurant(res.data);
       setLikeCount(res.data.likeCount ?? 0);
+      setLiked(res.data.liked ?? false);
     }).catch(() => navigate('/'));
     loadReviews();
   }, [id]);
@@ -52,6 +54,17 @@ export default function RestaurantDetail() {
       const res = await bookmarks.toggle(id);
       setBookmarked(res.data.bookmarked);
     } catch {}
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm('리뷰를 삭제할까요?')) return;
+    try {
+      await reviewsApi.delete(reviewId);
+      toast('리뷰가 삭제되었습니다.', 'success');
+      loadReviews();
+    } catch {
+      toast('리뷰 삭제에 실패했습니다.');
+    }
   };
 
   const avgRating = reviewList.length
@@ -122,12 +135,12 @@ export default function RestaurantDetail() {
         <div>
           <div className="flex justify-between items-center mb-5">
             <span className="text-sm font-semibold text-black">리뷰 {reviewList.length}</span>
-            {isLoggedIn && (
+            {isLoggedIn && !showReviewForm && (
               <button
-                onClick={() => setShowReviewForm((v) => !v)}
+                onClick={() => setShowReviewForm(true)}
                 className="text-xs text-gray-500 hover:text-black transition-colors border border-gray-300 hover:border-black px-3 py-1.5"
               >
-                {showReviewForm ? '취소' : '+ 리뷰 작성'}
+                + 리뷰 작성
               </button>
             )}
           </div>
@@ -137,6 +150,7 @@ export default function RestaurantDetail() {
               <ReviewForm
                 restaurantId={id}
                 onSuccess={() => { setShowReviewForm(false); loadReviews(); }}
+                onCancel={() => setShowReviewForm(false)}
               />
             </div>
           )}
@@ -144,25 +158,53 @@ export default function RestaurantDetail() {
           <div className="space-y-px">
             {reviewList.map((review) => (
               <div key={review.id} className="border border-gray-200 p-5">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-7 h-7 border border-gray-200 flex items-center justify-center text-[11px] font-bold text-black">
-                      {review.nickname?.[0]}
+                {editingReviewId === review.id ? (
+                  <ReviewForm
+                    restaurantId={id}
+                    reviewId={review.id}
+                    initialData={{ rating: review.rating, content: review.content, imageUrls: review.imageUrls }}
+                    onSuccess={() => { setEditingReviewId(null); loadReviews(); }}
+                    onCancel={() => setEditingReviewId(null)}
+                  />
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 border border-gray-200 flex items-center justify-center text-[11px] font-bold text-black">
+                          {review.nickname?.[0]}
+                        </div>
+                        <span className="text-sm font-medium text-black">{review.nickname}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <StarRating value={review.rating} />
+                        <span className="text-xs text-gray-300">{review.createdAt?.slice(0, 10)}</span>
+                        {isLoggedIn && review.nickname === nickname && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setEditingReviewId(review.id)}
+                              className="text-[11px] text-gray-400 hover:text-black transition-colors"
+                            >
+                              수정
+                            </button>
+                            <button
+                              onClick={() => handleDeleteReview(review.id)}
+                              className="text-[11px] text-gray-400 hover:text-black transition-colors"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-sm font-medium text-black">{review.nickname}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <StarRating value={review.rating} />
-                    <span className="text-xs text-gray-300">{review.createdAt?.slice(0, 10)}</span>
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 leading-relaxed">{review.content}</p>
-                {review.imageUrls?.length > 0 && (
-                  <div className="flex gap-2 mt-4">
-                    {review.imageUrls.map((url, i) => (
-                      <img key={i} src={url} alt="" className="w-20 h-20 object-cover" />
-                    ))}
-                  </div>
+                    <p className="text-sm text-gray-600 leading-relaxed">{review.content}</p>
+                    {review.imageUrls?.length > 0 && (
+                      <div className="flex gap-2 mt-4">
+                        {review.imageUrls.map((url, i) => (
+                          <img key={i} src={url} alt="" className="w-20 h-20 object-cover" />
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ))}

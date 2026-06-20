@@ -7,4 +7,5 @@ import java.util.Optional;
 public interface LikeRepository extends JpaRepository<Like, Long> {
     Optional<Like> findByUserIdAndRestaurantId(Long userId, Long restaurantId);
     long countByRestaurantId(Long restaurantId);
+    boolean existsByUserIdAndRestaurantId(Long userId, Long restaurantId);
 }

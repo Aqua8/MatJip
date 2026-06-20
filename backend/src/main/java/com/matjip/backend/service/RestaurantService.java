@@ -1,11 +1,13 @@
 package com.matjip.backend.service;
 
 import com.matjip.backend.domain.Restaurant;
+import com.matjip.backend.domain.User;
 import com.matjip.backend.dto.RestaurantRequest;
 import com.matjip.backend.dto.RestaurantResponse;
 import com.matjip.backend.repository.LikeRepository;
 import com.matjip.backend.repository.RestaurantRepository;
 import com.matjip.backend.repository.ReviewRepository;
+import com.matjip.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -17,6 +19,7 @@ public class RestaurantService {
     private final RestaurantRepository restaurantRepository;
     private final LikeRepository likeRepository;
     private final ReviewRepository reviewRepository;
+    private final UserRepository userRepository;
 
     public List<RestaurantResponse> search(String keyword) {
         List<Restaurant> list = (keyword == null || keyword.isBlank())
@@ -25,16 +28,25 @@ public class RestaurantService {
         return list.stream()
                 .map(r -> new RestaurantResponse(r,
                         likeRepository.countByRestaurantId(r.getId()),
-                        reviewRepository.avgRatingByRestaurantId(r.getId())))
+                        reviewRepository.avgRatingByRestaurantId(r.getId()),
+                        false))
                 .collect(Collectors.toList());
     }
 
-    public RestaurantResponse getById(Long id) {
+    public RestaurantResponse getById(Long id, String email) {
         Restaurant r = restaurantRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("맛집을 찾을 수 없습니다."));
+        boolean liked = false;
+        if (email != null) {
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user != null) {
+                liked = likeRepository.existsByUserIdAndRestaurantId(user.getId(), id);
+            }
+        }
         return new RestaurantResponse(r,
                 likeRepository.countByRestaurantId(r.getId()),
-                reviewRepository.avgRatingByRestaurantId(r.getId()));
+                reviewRepository.avgRatingByRestaurantId(r.getId()),
+                liked);
     }
 
     public RestaurantResponse register(RestaurantRequest req) {
@@ -44,6 +56,7 @@ public class RestaurantService {
                                 req.getCategory(), req.getLat(), req.getLng())));
         return new RestaurantResponse(restaurant,
                 likeRepository.countByRestaurantId(restaurant.getId()),
-                reviewRepository.avgRatingByRestaurantId(restaurant.getId()));
+                reviewRepository.avgRatingByRestaurantId(restaurant.getId()),
+                false);
     }
 }
