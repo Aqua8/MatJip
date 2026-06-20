@@ -5,6 +5,7 @@ import RestaurantDetail from './pages/RestaurantDetail';
 import Bookmarks from './pages/Bookmarks';
 import MyPage from './pages/MyPage';
 import Toast from './components/Toast';
+import WelcomeDialog from './components/WelcomeDialog';
 
 function Navbar({ onMenuClick }) {
   return (
@@ -62,6 +63,7 @@ export default function App() {
           </Routes>
         </main>
         <Toast />
+        <WelcomeDialog />
       </div>
     </BrowserRouter>
   );
