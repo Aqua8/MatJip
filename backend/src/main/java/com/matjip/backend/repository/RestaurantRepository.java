@@ -9,7 +9,6 @@ import java.util.Optional;
 
 public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
     Optional<Restaurant> findByKakaoPlaceId(String kakaoPlaceId);
-    List<Restaurant> findByNameContainingOrAddressContaining(String name, String address);
 
     @Query("SELECT r FROM Restaurant r WHERE EXISTS (SELECT b FROM Bookmark b WHERE b.restaurant = r)")
     List<Restaurant> findAllWithBookmarks();
