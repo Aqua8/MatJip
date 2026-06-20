@@ -32,9 +32,6 @@ public class Review {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt = LocalDateTime.now();
-
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ReviewImage> images = new ArrayList<>();
 
@@ -48,6 +45,5 @@ public class Review {
     public void update(Byte rating, String content) {
         this.rating = rating;
         this.content = content;
-        this.updatedAt = LocalDateTime.now();
     }
 }

@@ -43,24 +43,6 @@ export default function RestaurantCard({ restaurant, variant = 'grid', isSelecte
     );
   }
 
-  /* ── 컴팩트형 (지도 팝업) ── */
-  if (variant === 'compact') {
-    return (
-      <div onClick={() => navigate(`/restaurants/${id}`)} className="cursor-pointer pr-6">
-        <div className="flex items-baseline gap-1.5 mb-[6px]">
-          <span className="font-semibold text-[15px] leading-snug text-black">{name}</span>
-          <span className="text-[13px] text-gray-400 font-light">/{category}</span>
-          {ratingBadge && (
-            <span className="ml-auto text-[10px] border border-gray-300 text-gray-500 px-[7px] py-[3px] flex-shrink-0 tracking-[0.06em] uppercase">
-              {ratingBadge}
-            </span>
-          )}
-        </div>
-        <p className="text-[12px] text-gray-400">{address}</p>
-      </div>
-    );
-  }
-
   /* ── 그리드형 (즐겨찾기) ── */
   return (
     <div
