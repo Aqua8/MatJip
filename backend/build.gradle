@@ -43,3 +43,8 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// Docker 빌드 시 단일 실행 jar만 남기도록 plain jar 비활성화
+tasks.named('jar') {
+    enabled = false
+}
