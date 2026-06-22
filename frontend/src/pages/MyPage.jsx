@@ -101,9 +101,9 @@ export default function MyPage() {
   if (isLoggedIn) {
     return (
       <div className="h-full overflow-y-auto bg-white">
-        <div className="max-w-md mx-auto px-4 md:px-8 py-8">
+        <div className="max-w-2xl mx-auto px-4 md:px-8 py-8">
           {/* 프로필 */}
-          <div className="border border-gray-200 p-6 mb-4">
+          <div className="max-w-md mx-auto border border-gray-200 p-6 mb-4">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div className="flex-1 min-w-0">
                 {nicknameEdit ? (
@@ -228,22 +228,20 @@ export default function MyPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-px">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {myReviews.map((r) => (
-                <div key={r.id} className="border border-gray-200 p-5">
-                  <div className="flex justify-between items-center mb-2">
+                <div key={r.id} className="border border-gray-200 p-4 flex flex-col">
+                  <div className="flex justify-between items-start gap-2 mb-1.5">
                     <button
                       onClick={() => navigate(`/restaurants/${r.restaurantId}`)}
-                      className="text-xs font-semibold text-black hover:underline"
+                      className="text-xs font-semibold text-black hover:underline text-left line-clamp-1"
                     >
                       {r.restaurantName}
                     </button>
-                    <span className="text-xs text-gray-300">{r.createdAt?.slice(0, 10)}</span>
+                    <span className="text-[11px] text-gray-300 flex-shrink-0">{r.createdAt?.slice(0, 10)}</span>
                   </div>
-                  <div className="mb-2">
-                    <StarRating value={r.rating} />
-                  </div>
-                  <p className="text-sm text-gray-600 leading-relaxed">{r.content}</p>
+                  <StarRating value={r.rating} />
+                  <p className="text-[13px] text-gray-600 leading-relaxed mt-2 line-clamp-3">{r.content}</p>
                 </div>
               ))}
             </div>
