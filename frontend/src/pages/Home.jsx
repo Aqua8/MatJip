@@ -169,35 +169,40 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
     if (isMobile && sidebarOpen) onSidebarClose();
   };
 
+  // 카카오 검색 결과(DB에 없는 식당)를 등록해 id를 부여한다. 실패 시 null 반환.
+  const ensureRegistered = async (target) => {
+    if (target?.id) return target;
+    try {
+      const res = await restaurantsApi.create({
+        kakaoPlaceId: target.kakaoPlaceId,
+        name: target.name,
+        address: target.address,
+        category: target.category,
+        lat: target.lat,
+        lng: target.lng,
+      });
+      return { ...target, id: res.data.id };
+    } catch (err) {
+      if (err.response?.status === 409) {
+        // 이미 다른 사용자가 등록한 경우 목록에서 찾기
+        const listRes = await restaurantsApi.list('').catch(() => null);
+        if (listRes?.data) {
+          setList(listRes.data);
+          const found = listRes.data.find((r) => r.kakaoPlaceId === target.kakaoPlaceId);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+  };
+
   const handleToggleBookmark = async () => {
     if (!isLoggedIn) return toast('로그인이 필요합니다.');
 
     let target = selected;
-
-    // DB에 없으면 먼저 등록
     if (!target?.id) {
-      try {
-        const res = await restaurantsApi.create({
-          kakaoPlaceId: target.kakaoPlaceId,
-          name: target.name,
-          address: target.address,
-          category: target.category,
-          lat: target.lat,
-          lng: target.lng,
-        });
-        target = { ...target, id: res.data.id };
-      } catch (err) {
-        if (err.response?.status === 409) {
-          // 이미 다른 사용자가 등록한 경우 목록에서 찾기
-          const listRes = await restaurantsApi.list('').catch(() => null);
-          if (listRes?.data) {
-            setList(listRes.data);
-            const found = listRes.data.find((r) => r.kakaoPlaceId === target.kakaoPlaceId);
-            if (found) target = found;
-          }
-        }
-        if (!target?.id) return;
-      }
+      target = await ensureRegistered(target);
+      if (!target?.id) return;
       setSelected(target);
       addToRecent(target);
     }
@@ -212,6 +217,19 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
       }
       loadList();
     } catch {}
+  };
+
+  // 즐겨찾기와 무관하게 상세/리뷰 화면으로 진입한다. 미등록 식당이면 그 시점에 등록(로그인 필요).
+  const handleNavigateDetail = async () => {
+    let target = selected;
+    if (!target?.id) {
+      if (!isLoggedIn) return toast('로그인이 필요합니다.');
+      target = await ensureRegistered(target);
+      if (!target?.id) return;
+      setSelected(target);
+      addToRecent(target);
+    }
+    navigate(`/restaurants/${target.id}`);
   };
 
   return (
@@ -399,7 +417,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
             <DetailPanel
               restaurant={selected}
               onClose={() => setSelected(null)}
-              onNavigate={() => navigate(`/restaurants/${selected.id}`)}
+              onNavigate={handleNavigateDetail}
               isBookmarked={bookmarkedIds.has(selected.kakaoPlaceId)}
               onToggleBookmark={handleToggleBookmark}
             />
@@ -413,7 +431,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
           <DetailPanel
             restaurant={selected}
             onClose={() => setSelected(null)}
-            onNavigate={() => navigate(`/restaurants/${selected.id}`)}
+            onNavigate={handleNavigateDetail}
             isBookmarked={bookmarkedIds.has(selected.kakaoPlaceId)}
             onToggleBookmark={handleToggleBookmark}
             compact
@@ -465,15 +483,13 @@ function DetailPanel({ restaurant, onClose, onNavigate, isBookmarked, onToggleBo
             <button
               onClick={onToggleBookmark}
               aria-label={isBookmarked ? '즐겨찾기 해제' : '즐겨찾기'}
-              className={`${restaurant.id ? 'w-12 flex-shrink-0' : 'flex-1'} border border-gray-300 flex items-center justify-center text-[18px] hover:border-black transition-colors py-4`}
+              className="w-12 flex-shrink-0 border border-gray-300 flex items-center justify-center text-[18px] hover:border-black transition-colors py-4"
             >
               {isBookmarked ? '★' : '☆'}
             </button>
-            {restaurant.id && (
-              <button onClick={onNavigate} className="flex-1 bg-black text-white text-[12px] font-semibold tracking-[0.15em] py-4 hover:bg-gray-900 transition-colors">
-                상세 보기
-              </button>
-            )}
+            <button onClick={onNavigate} className="flex-1 bg-black text-white text-[12px] font-semibold tracking-[0.15em] py-4 hover:bg-gray-900 transition-colors">
+              상세 보기
+            </button>
           </div>
         </div>
       </div>
