@@ -113,6 +113,15 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
     setRecentList([]);
   };
 
+  const removeRecent = (target) => {
+    const key = target.kakaoPlaceId || String(target.id);
+    setRecentList((prev) => {
+      const updated = prev.filter((r) => (r.kakaoPlaceId || String(r.id)) !== key);
+      saveRecent(updated);
+      return updated;
+    });
+  };
+
   // 카카오 검색 실행
   const handleSearch = (e) => {
     e.preventDefault();
@@ -401,6 +410,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
                         : selected?.id === r.id
                     }
                     onSelect={handleSelect}
+                    onDelete={removeRecent}
                   />
                 ))
               )}
