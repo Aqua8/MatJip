@@ -163,9 +163,14 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
   };
 
   const handleSelect = (r) => {
-    setSelected(r);
-    addToRecent(r);
-    if (r?.lat && r?.lng) setFlyTo({ lat: r.lat, lng: r.lng });
+    // 최근 본 목록의 stale 객체일 수 있으므로 DB 최신 데이터(썸네일 등)로 보강
+    const fresh = list.find((x) =>
+      (r.id != null && x.id === r.id) || (r.kakaoPlaceId && x.kakaoPlaceId === r.kakaoPlaceId)
+    );
+    const target = fresh ? { ...r, ...fresh } : r;
+    setSelected(target);
+    addToRecent(target);
+    if (target?.lat && target?.lng) setFlyTo({ lat: target.lat, lng: target.lng });
     if (isMobile && sidebarOpen) onSidebarClose();
   };
 
