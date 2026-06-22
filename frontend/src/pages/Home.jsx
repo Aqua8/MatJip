@@ -160,6 +160,13 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
     addToRecent(restaurant);
     if (isMobile && sidebarOpen) onSidebarClose();
     clearSearch();
+
+    // DB에 등록된 식당이면 리뷰 기반 썸네일 보강 (즐겨찾기 안 한 식당 포함)
+    if (!restaurant.id) {
+      restaurantsApi.getByKakao(place.id)
+        .then((res) => setSelected((cur) => (cur?.kakaoPlaceId === res.data.kakaoPlaceId ? { ...cur, ...res.data } : cur)))
+        .catch(() => {});
+    }
   };
 
   const handleSelect = (r) => {

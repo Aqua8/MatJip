@@ -12,6 +12,7 @@ import com.matjip.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,6 +58,15 @@ public class RestaurantService {
                 reviewRepository.avgRatingByRestaurantId(r.getId()),
                 liked,
                 thumbnailOf(r.getId()));
+    }
+
+    public Optional<RestaurantResponse> findByKakaoPlaceId(String kakaoPlaceId) {
+        return restaurantRepository.findByKakaoPlaceId(kakaoPlaceId)
+                .map(r -> new RestaurantResponse(r,
+                        likeRepository.countByRestaurantId(r.getId()),
+                        reviewRepository.avgRatingByRestaurantId(r.getId()),
+                        false,
+                        thumbnailOf(r.getId())));
     }
 
     public RestaurantResponse register(RestaurantRequest req) {

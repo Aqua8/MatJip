@@ -8,6 +8,7 @@ export const auth = {
 export const restaurants = {
   list: (keyword = '') => api.get('/api/restaurants', { params: { keyword } }),
   get: (id) => api.get(`/api/restaurants/${id}`),
+  getByKakao: (kakaoPlaceId) => api.get(`/api/restaurants/by-kakao/${kakaoPlaceId}`),
   create: (data) => api.post('/api/restaurants', data),
 };
 
