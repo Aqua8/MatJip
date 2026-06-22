@@ -10,9 +10,9 @@ import java.util.Optional;
 public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
     Optional<Restaurant> findByKakaoPlaceId(String kakaoPlaceId);
 
-    @Query("SELECT r FROM Restaurant r WHERE EXISTS (SELECT b FROM Bookmark b WHERE b.restaurant = r)")
-    List<Restaurant> findAllWithBookmarks();
+    @Query("SELECT r FROM Restaurant r WHERE EXISTS (SELECT b FROM Bookmark b WHERE b.restaurant = r) OR EXISTS (SELECT v FROM Review v WHERE v.restaurant = r)")
+    List<Restaurant> findAllVisible();
 
-    @Query("SELECT r FROM Restaurant r WHERE EXISTS (SELECT b FROM Bookmark b WHERE b.restaurant = r) AND (r.name LIKE %:keyword% OR r.address LIKE %:keyword%)")
-    List<Restaurant> findWithBookmarksByKeyword(@Param("keyword") String keyword);
+    @Query("SELECT r FROM Restaurant r WHERE (EXISTS (SELECT b FROM Bookmark b WHERE b.restaurant = r) OR EXISTS (SELECT v FROM Review v WHERE v.restaurant = r)) AND (r.name LIKE %:keyword% OR r.address LIKE %:keyword%)")
+    List<Restaurant> findVisibleByKeyword(@Param("keyword") String keyword);
 }

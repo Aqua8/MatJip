@@ -31,8 +31,8 @@ public class RestaurantService {
 
     public List<RestaurantResponse> search(String keyword) {
         List<Restaurant> list = (keyword == null || keyword.isBlank())
-                ? restaurantRepository.findAllWithBookmarks()
-                : restaurantRepository.findWithBookmarksByKeyword(keyword);
+                ? restaurantRepository.findAllVisible()
+                : restaurantRepository.findVisibleByKeyword(keyword);
         return list.stream()
                 .map(r -> new RestaurantResponse(r,
                         likeRepository.countByRestaurantId(r.getId()),
