@@ -163,15 +163,16 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
   };
 
   const handleSelect = (r) => {
-    // 최근 본 목록의 stale 객체일 수 있으므로 DB 최신 데이터(썸네일 등)로 보강
-    const fresh = list.find((x) =>
-      (r.id != null && x.id === r.id) || (r.kakaoPlaceId && x.kakaoPlaceId === r.kakaoPlaceId)
-    );
-    const target = fresh ? { ...r, ...fresh } : r;
-    setSelected(target);
-    addToRecent(target);
-    if (target?.lat && target?.lng) setFlyTo({ lat: target.lat, lng: target.lng });
+    setSelected(r);
+    addToRecent(r);
+    if (r?.lat && r?.lng) setFlyTo({ lat: r.lat, lng: r.lng });
     if (isMobile && sidebarOpen) onSidebarClose();
+    // 선택한 식당의 최신 정보(리뷰 기반 썸네일 등)를 DB에서 조회해 보강
+    if (r?.id) {
+      restaurantsApi.get(r.id)
+        .then((res) => setSelected((cur) => (cur?.id === res.data.id ? { ...cur, ...res.data } : cur)))
+        .catch(() => {});
+    }
   };
 
   // 카카오 검색 결과(DB에 없는 식당)를 등록해 id를 부여한다. 실패 시 null 반환.
