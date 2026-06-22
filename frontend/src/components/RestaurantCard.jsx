@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function RestaurantCard({ restaurant, variant = 'grid', isSelected, onSelect, onDelete }) {
   const navigate = useNavigate();
-  const { id, name, address, category, likeCount, avgRating } = restaurant;
+  const { id, name, address, category, likeCount, avgRating, thumbnailUrl } = restaurant;
 
   const handleClick = () => {
     if (variant === 'list' && onSelect) {
@@ -57,17 +57,30 @@ export default function RestaurantCard({ restaurant, variant = 'grid', isSelecte
   return (
     <div
       onClick={() => navigate(`/restaurants/${id}`)}
-      className="bg-white border border-gray-200 cursor-pointer hover:border-black transition-colors p-5 group"
+      className="bg-white border border-gray-200 cursor-pointer hover:border-black transition-colors group overflow-hidden"
     >
-      <div className="flex items-baseline justify-between mb-3">
-        <span className="text-[11px] text-gray-400 tracking-[0.06em]">/{category}</span>
-        <span className="text-[11px] text-gray-300 group-hover:text-gray-500 transition-colors">♥ {likeCount ?? 0}</span>
+      <div className="aspect-[4/3] bg-gray-100 flex items-center justify-center overflow-hidden">
+        {thumbnailUrl ? (
+          <img src={thumbnailUrl} alt={name} className="w-full h-full object-cover" />
+        ) : (
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+        )}
       </div>
-      <h3 className="font-semibold text-[15px] text-black mb-1.5 line-clamp-1">{name}</h3>
-      <p className="text-[12px] text-gray-400 truncate mb-4">{address}</p>
-      <span className="text-[10px] border border-gray-300 text-gray-500 px-[7px] py-[3px] tracking-[0.06em] uppercase">
-        {ratingBadge ?? '리뷰없음'}
-      </span>
+      <div className="p-5">
+        <div className="flex items-baseline justify-between mb-3">
+          <span className="text-[11px] text-gray-400 tracking-[0.06em]">/{category}</span>
+          <span className="text-[11px] text-gray-300 group-hover:text-gray-500 transition-colors">♥ {likeCount ?? 0}</span>
+        </div>
+        <h3 className="font-semibold text-[15px] text-black mb-1.5 line-clamp-1">{name}</h3>
+        <p className="text-[12px] text-gray-400 truncate mb-4">{address}</p>
+        <span className="text-[10px] border border-gray-300 text-gray-500 px-[7px] py-[3px] tracking-[0.06em] uppercase">
+          {ratingBadge ?? '리뷰없음'}
+        </span>
+      </div>
     </div>
   );
 }
