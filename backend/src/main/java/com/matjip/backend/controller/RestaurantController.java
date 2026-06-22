@@ -30,6 +30,13 @@ public class RestaurantController {
         return ResponseEntity.ok(restaurantService.getById(id, email));
     }
 
+    @GetMapping("/by-kakao/{kakaoPlaceId}")
+    public ResponseEntity<RestaurantResponse> getByKakao(@PathVariable String kakaoPlaceId) {
+        return restaurantService.findByKakaoPlaceId(kakaoPlaceId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<RestaurantResponse> register(@Valid @RequestBody RestaurantRequest req) {
         return ResponseEntity.ok(restaurantService.register(req));
