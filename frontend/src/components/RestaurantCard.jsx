@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
-export default function RestaurantCard({ restaurant, variant = 'grid', isSelected, onSelect }) {
+export default function RestaurantCard({ restaurant, variant = 'grid', isSelected, onSelect, onDelete }) {
   const navigate = useNavigate();
   const { id, name, address, category, likeCount, avgRating } = restaurant;
 
@@ -30,9 +30,20 @@ export default function RestaurantCard({ restaurant, variant = 'grid', isSelecte
             <span className="font-semibold text-[15px] leading-snug text-black">{name}</span>
             <span className="text-[13px] text-gray-400 flex-shrink-0 font-light">/{category}</span>
           </div>
-          <span className="text-[10px] border border-gray-300 text-gray-500 px-[7px] py-[3px] flex-shrink-0 tracking-[0.06em] uppercase whitespace-nowrap">
-            {ratingBadge ?? '없음'}
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-[10px] border border-gray-300 text-gray-500 px-[7px] py-[3px] tracking-[0.06em] uppercase whitespace-nowrap">
+              {ratingBadge ?? '없음'}
+            </span>
+            {onDelete && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(restaurant); }}
+                aria-label="최근 목록에서 삭제"
+                className="text-[12px] text-gray-300 hover:text-black transition-colors leading-none"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-[12px] text-gray-400 truncate">{address}</span>
