@@ -30,9 +30,12 @@ export default function WelcomeDialog() {
         <p className="text-sm text-gray-600 leading-relaxed mb-2">
           이 웹사이트는 <span className="text-black font-medium">포트폴리오용으로 제작된 맛집 리뷰 플랫폼</span>입니다.
         </p>
-        <p className="text-sm text-gray-500 leading-relaxed mb-8">
+        <p className="text-sm text-gray-500 leading-relaxed mb-4">
           카카오맵 기반 식당 검색, 리뷰 작성, 좋아요 및 즐겨찾기 기능을 체험해보실 수 있습니다.
           회원가입 후 직접 맛집을 등록하고 리뷰를 남겨보세요.
+        </p>
+        <p className="text-xs text-gray-500 leading-relaxed mb-8">
+          식당을 <span className="text-black font-medium">즐겨찾기하면 맛집으로 등록되어 모든 사용자의 지도에 표시</span>됩니다.
         </p>
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 cursor-pointer select-none">
