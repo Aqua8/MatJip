@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, Link, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import RestaurantDetail from './pages/RestaurantDetail';
 import Bookmarks from './pages/Bookmarks';
@@ -60,6 +60,7 @@ export default function App() {
             <Route path="/restaurants/:id" element={<RestaurantDetail />} />
             <Route path="/bookmarks" element={<Bookmarks />} />
             <Route path="/mypage" element={<MyPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
         <Toast />
