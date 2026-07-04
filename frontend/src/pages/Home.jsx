@@ -8,6 +8,7 @@ import { toast } from '../store/toastStore';
 
 const CATEGORIES = ['전체', '한식', '일식', '중식', '양식', '카페', '기타'];
 const RECENT_KEY = 'matjip_recent';
+const EMPTY_BOOKMARKED_IDS = new Set();
 
 const mapCategory = (categoryName = '') => {
   if (categoryName.includes('한식')) return '한식';
@@ -22,7 +23,7 @@ const loadRecent = () => {
   try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; }
 };
 const saveRecent = (items) => {
-  try { localStorage.setItem(RECENT_KEY, JSON.stringify(items)); } catch {}
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(items)); } catch { /* 저장 실패 시 무시 */ }
 };
 
 export default function Home({ sidebarOpen, onSidebarClose }) {
@@ -50,9 +51,11 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
 
   // 즐겨찾기된 kakaoPlaceId Set
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
+  // 로그아웃 상태에서는 표시상 빈 Set으로 취급 (state 자체는 다음 로그인 때 다시 채워짐)
+  const effectiveBookmarkedIds = isLoggedIn ? bookmarkedIds : EMPTY_BOOKMARKED_IDS;
 
   useEffect(() => {
-    if (!isLoggedIn) { setBookmarkedIds(new Set()); return; }
+    if (!isLoggedIn) return;
     bookmarksApi.list().then((res) => {
       setBookmarkedIds(new Set(res.data.map((r) => r.kakaoPlaceId).filter(Boolean)));
     }).catch(() => {});
@@ -109,7 +112,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
   };
 
   const clearRecent = () => {
-    try { localStorage.removeItem(RECENT_KEY); } catch {}
+    try { localStorage.removeItem(RECENT_KEY); } catch { /* 삭제 실패 시 무시 */ }
     setRecentList([]);
   };
 
@@ -238,7 +241,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
         setBookmarkedIds((prev) => { const next = new Set(prev); next.delete(kakaoId); return next; });
       }
       loadList();
-    } catch {}
+    } catch { /* 토글 실패 시 무시 */ }
   };
 
   // 즐겨찾기와 무관하게 상세/리뷰 화면으로 진입한다. 미등록 식당이면 그 시점에 등록(로그인 필요).
@@ -352,7 +355,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
                   <div className="flex items-baseline gap-1 mb-[6px] min-w-0">
                     <span className="font-semibold text-[15px] leading-snug text-black truncate">{place.place_name}</span>
                     <span className="text-[13px] text-gray-400 flex-shrink-0 font-light">/{mapCategory(place.category_name)}</span>
-                    {bookmarkedIds.has(place.id) && (
+                    {effectiveBookmarkedIds.has(place.id) && (
                       <span className="text-[12px] text-black flex-shrink-0 ml-auto">★</span>
                     )}
                   </div>
@@ -424,7 +427,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
         <div className="flex-1 relative">
           <Map
             restaurants={filtered}
-            bookmarkedIds={bookmarkedIds}
+            bookmarkedIds={effectiveBookmarkedIds}
             onMarkerClick={handleSelect}
             onBoundsChange={setMapBounds}
             flyTo={flyTo}
@@ -441,7 +444,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
               restaurant={selected}
               onClose={() => setSelected(null)}
               onNavigate={handleNavigateDetail}
-              isBookmarked={bookmarkedIds.has(selected.kakaoPlaceId)}
+              isBookmarked={effectiveBookmarkedIds.has(selected.kakaoPlaceId)}
               onToggleBookmark={handleToggleBookmark}
             />
           </div>
@@ -455,7 +458,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
             restaurant={selected}
             onClose={() => setSelected(null)}
             onNavigate={handleNavigateDetail}
-            isBookmarked={bookmarkedIds.has(selected.kakaoPlaceId)}
+            isBookmarked={effectiveBookmarkedIds.has(selected.kakaoPlaceId)}
             onToggleBookmark={handleToggleBookmark}
             compact
           />
