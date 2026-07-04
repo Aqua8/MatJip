@@ -18,6 +18,10 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema.sql
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
 
 jwt:
   secret: replace-with-at-least-32-character-secret-key
