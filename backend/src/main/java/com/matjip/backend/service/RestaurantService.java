@@ -10,6 +10,7 @@ import com.matjip.backend.repository.ReviewImageRepository;
 import com.matjip.backend.repository.ReviewRepository;
 import com.matjip.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
@@ -70,10 +71,16 @@ public class RestaurantService {
     }
 
     public RestaurantResponse register(RestaurantRequest req) {
-        Restaurant restaurant = restaurantRepository.findByKakaoPlaceId(req.getKakaoPlaceId())
-                .orElseGet(() -> restaurantRepository.save(
-                        new Restaurant(req.getKakaoPlaceId(), req.getName(), req.getAddress(),
-                                req.getCategory(), req.getLat(), req.getLng())));
+        Restaurant restaurant;
+        try {
+            restaurant = restaurantRepository.findByKakaoPlaceId(req.getKakaoPlaceId())
+                    .orElseGet(() -> restaurantRepository.saveAndFlush(
+                            new Restaurant(req.getKakaoPlaceId(), req.getName(), req.getAddress(),
+                                    req.getCategory(), req.getLat(), req.getLng())));
+        } catch (DataIntegrityViolationException e) {
+            // 동시 요청으로 다른 트랜잭션이 먼저 동일한 맛집을 등록한 경우
+            restaurant = restaurantRepository.findByKakaoPlaceId(req.getKakaoPlaceId()).orElseThrow(() -> e);
+        }
         return new RestaurantResponse(restaurant,
                 likeRepository.countByRestaurantId(restaurant.getId()),
                 reviewRepository.avgRatingByRestaurantId(restaurant.getId()),

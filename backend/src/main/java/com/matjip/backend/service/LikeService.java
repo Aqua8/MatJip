@@ -3,6 +3,7 @@ package com.matjip.backend.service;
 import com.matjip.backend.domain.*;
 import com.matjip.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
@@ -26,8 +27,13 @@ public class LikeService {
             likeRepository.delete(existing.get());
             liked = false;
         } else {
-            likeRepository.save(new Like(user, restaurant));
-            liked = true;
+            try {
+                likeRepository.saveAndFlush(new Like(user, restaurant));
+                liked = true;
+            } catch (DataIntegrityViolationException e) {
+                // 동시 요청으로 다른 트랜잭션이 먼저 좋아요를 등록한 경우
+                liked = true;
+            }
         }
         return Map.of("liked", liked, "count", likeRepository.countByRestaurantId(restaurantId));
     }

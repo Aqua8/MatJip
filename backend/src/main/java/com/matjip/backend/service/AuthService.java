@@ -7,6 +7,7 @@ import com.matjip.backend.dto.SignupRequest;
 import com.matjip.backend.repository.UserRepository;
 import com.matjip.backend.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +23,12 @@ public class AuthService {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
         User user = new User(req.getEmail(), passwordEncoder.encode(req.getPassword()), req.getNickname());
-        userRepository.save(user);
+        try {
+            userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException e) {
+            // 동시 요청으로 다른 트랜잭션이 먼저 같은 이메일로 가입한 경우
+            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+        }
         return new AuthResponse(jwtUtil.generateToken(user.getEmail()), user.getNickname());
     }
 
