@@ -35,6 +35,67 @@ export default function Map({ restaurants = [], bookmarkedIds, onMarkerClick, on
   useEffect(() => { onMapBlankClickRef.current = onMapBlankClick; });
   useEffect(() => { bookmarkedIdsRef.current = bookmarkedIds; });
 
+  function setMarkers(map, list) {
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+    clustererRef.current?.clear();
+
+    const normalImage = new window.kakao.maps.MarkerImage(
+      NORMAL_MARKER_SRC,
+      new window.kakao.maps.Size(22, 30),
+      { offset: new window.kakao.maps.Point(11, 30) }
+    );
+    const bookmarkImage = new window.kakao.maps.MarkerImage(
+      BOOKMARK_MARKER_SRC,
+      new window.kakao.maps.Size(24, 33),
+      { offset: new window.kakao.maps.Point(12, 33) }
+    );
+
+    const markers = list
+      .filter((r) => r.lat && r.lng)
+      .map((r) => {
+        const isMine = bookmarkedIdsRef.current?.has(r.kakaoPlaceId);
+        const marker = new window.kakao.maps.Marker({
+          position: new window.kakao.maps.LatLng(r.lat, r.lng),
+          title: r.name,
+          image: isMine ? bookmarkImage : normalImage,
+        });
+        window.kakao.maps.event.addListener(marker, 'click', () => {
+          // 이전 말풍선 제거
+          infoOverlayRef.current?.setMap(null);
+
+          // 말풍선 생성
+          const card = document.createElement('div');
+          card.style.cssText = 'padding-bottom:44px;position:relative;cursor:pointer;';
+          const rating = r.avgRating ? `<span style="font-size:11px;color:#6b7280;margin-left:4px;">★ ${Number(r.avgRating).toFixed(1)}</span>` : '';
+          card.innerHTML = `
+            <div style="background:#fff;border:1px solid #e5e7eb;padding:10px 14px;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.1);position:relative;min-width:120px;">
+              <div style="font-weight:700;font-size:13px;color:#000;margin-bottom:3px;">${r.name}</div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <span style="font-size:11px;color:#9ca3af;">${r.category}</span>${rating}
+              </div>
+              <div style="position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:7px solid #e5e7eb;"></div>
+              <div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid #fff;"></div>
+            </div>
+          `;
+
+          infoOverlayRef.current = new window.kakao.maps.CustomOverlay({
+            map: mapRef.current,
+            position: marker.getPosition(),
+            content: card,
+            yAnchor: 1,
+            zIndex: 5,
+          });
+
+          onMarkerClickRef.current?.(r);
+        });
+        return marker;
+      });
+
+    markersRef.current = markers;
+    clustererRef.current?.addMarkers(markers);
+  }
+
   useEffect(() => {
     if (!KAKAO_APP_KEY) return;
 
@@ -168,67 +229,6 @@ export default function Map({ restaurants = [], bookmarkedIds, onMarkerClick, on
       });
     }
   }, [selectedRestaurant]);
-
-  function setMarkers(map, list) {
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
-    clustererRef.current?.clear();
-
-    const normalImage = new window.kakao.maps.MarkerImage(
-      NORMAL_MARKER_SRC,
-      new window.kakao.maps.Size(22, 30),
-      { offset: new window.kakao.maps.Point(11, 30) }
-    );
-    const bookmarkImage = new window.kakao.maps.MarkerImage(
-      BOOKMARK_MARKER_SRC,
-      new window.kakao.maps.Size(24, 33),
-      { offset: new window.kakao.maps.Point(12, 33) }
-    );
-
-    const markers = list
-      .filter((r) => r.lat && r.lng)
-      .map((r) => {
-        const isMine = bookmarkedIdsRef.current?.has(r.kakaoPlaceId);
-        const marker = new window.kakao.maps.Marker({
-          position: new window.kakao.maps.LatLng(r.lat, r.lng),
-          title: r.name,
-          image: isMine ? bookmarkImage : normalImage,
-        });
-        window.kakao.maps.event.addListener(marker, 'click', () => {
-          // 이전 말풍선 제거
-          infoOverlayRef.current?.setMap(null);
-
-          // 말풍선 생성
-          const card = document.createElement('div');
-          card.style.cssText = 'padding-bottom:44px;position:relative;cursor:pointer;';
-          const rating = r.avgRating ? `<span style="font-size:11px;color:#6b7280;margin-left:4px;">★ ${Number(r.avgRating).toFixed(1)}</span>` : '';
-          card.innerHTML = `
-            <div style="background:#fff;border:1px solid #e5e7eb;padding:10px 14px;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.1);position:relative;min-width:120px;">
-              <div style="font-weight:700;font-size:13px;color:#000;margin-bottom:3px;">${r.name}</div>
-              <div style="display:flex;align-items:center;gap:4px;">
-                <span style="font-size:11px;color:#9ca3af;">${r.category}</span>${rating}
-              </div>
-              <div style="position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:7px solid #e5e7eb;"></div>
-              <div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:6px solid #fff;"></div>
-            </div>
-          `;
-
-          infoOverlayRef.current = new window.kakao.maps.CustomOverlay({
-            map: mapRef.current,
-            position: marker.getPosition(),
-            content: card,
-            yAnchor: 1,
-            zIndex: 5,
-          });
-
-          onMarkerClickRef.current?.(r);
-        });
-        return marker;
-      });
-
-    markersRef.current = markers;
-    clustererRef.current?.addMarkers(markers);
-  }
 
   const moveToMyLocation = () => {
     if (!mapRef.current) return;
