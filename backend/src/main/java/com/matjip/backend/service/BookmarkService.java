@@ -4,6 +4,7 @@ import com.matjip.backend.domain.*;
 import com.matjip.backend.dto.RestaurantResponse;
 import com.matjip.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -44,7 +45,11 @@ public class BookmarkService {
             bookmarkRepository.delete(existing.get());
             return Map.of("bookmarked", false);
         } else {
-            bookmarkRepository.save(new Bookmark(user, restaurant));
+            try {
+                bookmarkRepository.saveAndFlush(new Bookmark(user, restaurant));
+            } catch (DataIntegrityViolationException e) {
+                // 동시 요청으로 다른 트랜잭션이 먼저 즐겨찾기를 등록한 경우
+            }
             return Map.of("bookmarked", true);
         }
     }
