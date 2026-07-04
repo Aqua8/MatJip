@@ -12,10 +12,25 @@ export const restaurants = {
   create: (data) => api.post('/api/restaurants', data),
 };
 
+function toReviewFormData({ rating, content, existingImageUrls = [], images = [] }) {
+  const form = new FormData();
+  form.append('rating', rating);
+  form.append('content', content);
+  existingImageUrls.forEach((url) => form.append('existingImageUrls', url));
+  images.forEach((file) => form.append('images', file));
+  return form;
+}
+
 export const reviews = {
   list: (restaurantId) => api.get(`/api/restaurants/${restaurantId}/reviews`),
-  create: (restaurantId, data) => api.post(`/api/restaurants/${restaurantId}/reviews`, data),
-  update: (id, data) => api.put(`/api/reviews/${id}`, data),
+  create: (restaurantId, data) =>
+    api.post(`/api/restaurants/${restaurantId}/reviews`, toReviewFormData(data), {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  update: (id, data) =>
+    api.put(`/api/reviews/${id}`, toReviewFormData(data), {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   delete: (id) => api.delete(`/api/reviews/${id}`),
 };
 
@@ -37,10 +52,3 @@ export const user = {
   updatePassword: (currentPassword, newPassword) => api.put('/api/users/me/password', { currentPassword, newPassword }),
 };
 
-export const upload = {
-  image: (file) => {
-    const form = new FormData();
-    form.append('file', file);
-    return api.post('/api/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-  },
-};
