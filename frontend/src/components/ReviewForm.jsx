@@ -1,28 +1,42 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import StarRating from './StarRating';
-import { reviews as reviewsApi, upload } from '../api';
+import { reviews as reviewsApi } from '../api';
 import { toast } from '../store/toastStore';
 
 export default function ReviewForm({ restaurantId, onSuccess, initialData, reviewId, onCancel }) {
   const [rating, setRating] = useState(initialData?.rating ?? 0);
   const [content, setContent] = useState(initialData?.content ?? '');
-  const [imageUrls, setImageUrls] = useState(initialData?.imageUrls ?? []);
-  const [uploading, setUploading] = useState(false);
+  const [existingImageUrls, setExistingImageUrls] = useState(initialData?.imageUrls ?? []);
+  const [newImages, setNewImages] = useState([]);
+  const [previews, setPreviews] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const previewsRef = useRef(previews);
+  useEffect(() => {
+    previewsRef.current = previews;
+  }, [previews]);
 
-  const handleFileChange = async (e) => {
+  useEffect(() => {
+    return () => previewsRef.current.forEach((url) => URL.revokeObjectURL(url));
+  }, []);
+
+  const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-    setUploading(true);
-    try {
-      const results = await Promise.all(files.map((f) => upload.image(f)));
-      setImageUrls((prev) => [...prev, ...results.map((r) => r.data.url)]);
-    } catch {
-      toast('이미지 업로드에 실패했습니다.');
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
+    setNewImages((prev) => [...prev, ...files]);
+    setPreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
+    e.target.value = '';
+  };
+
+  const removeExistingImage = (url) => {
+    setExistingImageUrls((prev) => prev.filter((u) => u !== url));
+  };
+
+  const removeNewImage = (index) => {
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -31,10 +45,11 @@ export default function ReviewForm({ restaurantId, onSuccess, initialData, revie
     if (!content.trim()) return toast('내용을 입력해주세요.');
     setSubmitting(true);
     try {
+      const data = { rating, content, existingImageUrls, images: newImages };
       if (reviewId) {
-        await reviewsApi.update(reviewId, { rating, content, imageUrls });
+        await reviewsApi.update(reviewId, data);
       } else {
-        await reviewsApi.create(restaurantId, { rating, content, imageUrls });
+        await reviewsApi.create(restaurantId, data);
       }
       onSuccess?.();
     } catch {
@@ -56,12 +71,24 @@ export default function ReviewForm({ restaurantId, onSuccess, initialData, revie
         className="w-full border border-gray-200 p-4 text-sm resize-none bg-white outline-none focus:border-black transition-colors"
       />
       <div className="flex items-center gap-3 flex-wrap">
-        {imageUrls.map((url, i) => (
-          <div key={i} className="relative">
+        {existingImageUrls.map((url) => (
+          <div key={url} className="relative">
             <img src={url} alt="" className="w-10 h-10 object-cover" />
             <button
               type="button"
-              onClick={() => setImageUrls((prev) => prev.filter((_, idx) => idx !== i))}
+              onClick={() => removeExistingImage(url)}
+              className="absolute -top-1 -right-1 w-4 h-4 bg-black text-white text-[10px] flex items-center justify-center leading-none"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        {previews.map((url, i) => (
+          <div key={url} className="relative">
+            <img src={url} alt="" className="w-10 h-10 object-cover" />
+            <button
+              type="button"
+              onClick={() => removeNewImage(i)}
               className="absolute -top-1 -right-1 w-4 h-4 bg-black text-white text-[10px] flex items-center justify-center leading-none"
             >
               ×
@@ -69,8 +96,8 @@ export default function ReviewForm({ restaurantId, onSuccess, initialData, revie
           </div>
         ))}
         <label className="text-xs text-gray-400 cursor-pointer hover:text-black transition-colors">
-          {uploading ? '업로드 중...' : '+ 사진 추가'}
-          <input type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" disabled={uploading} />
+          + 사진 추가
+          <input type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
         </label>
       </div>
       <div className="flex gap-2">

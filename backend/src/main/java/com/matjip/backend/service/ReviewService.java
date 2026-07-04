@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,6 +20,23 @@ public class ReviewService {
     private final ReviewImageRepository reviewImageRepository;
     private final RestaurantRepository restaurantRepository;
     private final UserRepository userRepository;
+    private final UploadService uploadService;
+
+    private List<String> uploadImages(List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            return List.of();
+        }
+        List<String> uploadedUrls = new ArrayList<>();
+        try {
+            for (MultipartFile file : files) {
+                uploadedUrls.add(uploadService.upload(file));
+            }
+            return uploadedUrls;
+        } catch (RuntimeException e) {
+            uploadedUrls.forEach(uploadService::delete);
+            throw e;
+        }
+    }
 
     @Transactional(readOnly = true)
     public List<ReviewResponse> getReviews(Long restaurantId) {
@@ -31,11 +50,15 @@ public class ReviewService {
         User user = userRepository.findByEmail(email).orElseThrow();
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new IllegalArgumentException("맛집을 찾을 수 없습니다."));
-        Review review = reviewRepository.save(new Review(user, restaurant, req.getRating(), req.getContent()));
-        if (req.getImageUrls() != null) {
-            req.getImageUrls().forEach(url -> reviewImageRepository.save(new ReviewImage(review, url)));
+        List<String> imageUrls = uploadImages(req.getImages());
+        try {
+            Review review = reviewRepository.save(new Review(user, restaurant, req.getRating(), req.getContent()));
+            imageUrls.forEach(url -> reviewImageRepository.save(new ReviewImage(review, url)));
+            return new ReviewResponse(review);
+        } catch (RuntimeException e) {
+            imageUrls.forEach(uploadService::delete);
+            throw e;
         }
-        return new ReviewResponse(review);
     }
 
     @Transactional
@@ -45,12 +68,21 @@ public class ReviewService {
         if (!review.getUser().getEmail().equals(email)) {
             throw new AccessDeniedException("권한이 없습니다.");
         }
-        review.update(req.getRating(), req.getContent());
-        reviewImageRepository.deleteAll(review.getImages());
-        review.getImages().clear();
-        if (req.getImageUrls() != null) {
-            req.getImageUrls().forEach(url -> reviewImageRepository.save(new ReviewImage(review, url)));
+        List<String> keptUrls = req.getExistingImageUrls() != null ? req.getExistingImageUrls() : List.of();
+        List<String> removedUrls = review.getImages().stream()
+                .map(ReviewImage::getImageUrl)
+                .filter(url -> !keptUrls.contains(url))
+                .collect(Collectors.toList());
+        List<String> newUrls = uploadImages(req.getImages());
+        try {
+            review.update(req.getRating(), req.getContent());
+            review.getImages().removeIf(img -> !keptUrls.contains(img.getImageUrl()));
+            newUrls.forEach(url -> review.getImages().add(new ReviewImage(review, url)));
+        } catch (RuntimeException e) {
+            newUrls.forEach(uploadService::delete);
+            throw e;
         }
+        removedUrls.forEach(uploadService::delete);
         return new ReviewResponse(review);
     }
 
@@ -61,7 +93,9 @@ public class ReviewService {
         if (!review.getUser().getEmail().equals(email)) {
             throw new AccessDeniedException("권한이 없습니다.");
         }
+        List<String> imageUrls = review.getImages().stream().map(ReviewImage::getImageUrl).collect(Collectors.toList());
         reviewRepository.delete(review);
+        imageUrls.forEach(uploadService::delete);
     }
 
     @Transactional(readOnly = true)
