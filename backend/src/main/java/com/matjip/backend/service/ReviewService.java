@@ -78,6 +78,7 @@ public class ReviewService {
             review.update(req.getRating(), req.getContent());
             review.getImages().removeIf(img -> !keptUrls.contains(img.getImageUrl()));
             newUrls.forEach(url -> review.getImages().add(new ReviewImage(review, url)));
+            reviewRepository.flush();
         } catch (RuntimeException e) {
             newUrls.forEach(uploadService::delete);
             throw e;
@@ -95,6 +96,7 @@ public class ReviewService {
         }
         List<String> imageUrls = review.getImages().stream().map(ReviewImage::getImageUrl).collect(Collectors.toList());
         reviewRepository.delete(review);
+        reviewRepository.flush();
         imageUrls.forEach(uploadService::delete);
     }
 
