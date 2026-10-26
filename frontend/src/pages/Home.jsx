@@ -26,7 +26,7 @@ const saveRecent = (items) => {
   try { localStorage.setItem(RECENT_KEY, JSON.stringify(items)); } catch { /* 저장 실패 시 무시 */ }
 };
 
-export default function Home({ sidebarOpen, onSidebarClose }) {
+export default function Home({ sidebarOpen, onSidebarClose, onSidebarOpen }) {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
 
@@ -41,6 +41,8 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
   const [searchMode, setSearchMode] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [kakaoResults, setKakaoResults] = useState([]);
+  // 지도 클릭으로 모은 주변 가게 목록을 보여주는 중인지 (검색 결과 목록을 재사용)
+  const [nearbyMode, setNearbyMode] = useState(false);
 
   // 지도 범위 필터
   const [mapBounds, setMapBounds] = useState(null);
@@ -132,6 +134,7 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
     if (!q) { clearSearch(); return; }
     if (!window.kakao?.maps?.services) return;
 
+    setNearbyMode(false);
     setSearchLoading(true);
     setSearchMode(true);
     setKakaoResults([]);
@@ -148,7 +151,29 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
   const clearSearch = () => {
     setInputVal('');
     setSearchMode(false);
+    setNearbyMode(false);
     setKakaoResults([]);
+  };
+
+  // 지도 클릭으로 찾은 주변 가게들: 1곳이면 바로 상세, 여러 곳이면 왼쪽 목록에서 고르게 한다
+  const handleMapPlacesClick = (places) => {
+    if (places.length === 1) {
+      handleKakaoResultClick(places[0]);
+      return;
+    }
+    setSelected(null);
+    setInputVal('');
+    setSearchLoading(false);
+    setKakaoResults(places);
+    setNearbyMode(true);
+    setSearchMode(true);
+    onSidebarOpen?.();
+  };
+
+  // 지도 빈 곳 클릭: 선택을 해제하고, 주변 가게 목록을 보고 있었다면 닫는다
+  const handleMapBlankClick = () => {
+    setSelected(null);
+    if (nearbyMode) clearSearch();
   };
 
   // 카카오 결과/POI 클릭 → DB에 즉시 등록하지 않음, 임시 객체로 패널 표시
@@ -346,7 +371,13 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
                 <p className="text-xs text-gray-400">검색 결과가 없습니다</p>
               </div>
             ) : (
-              kakaoResults.map((place) => (
+              <>
+              {nearbyMode && (
+                <div className="px-6 py-2.5 border-b border-gray-100">
+                  <span className="text-[11px] text-gray-400 tracking-[0.06em]">이 위치 주변 {kakaoResults.length}곳</span>
+                </div>
+              )}
+              {kakaoResults.map((place) => (
                 <div
                   key={place.id}
                   onClick={() => handleKakaoResultClick(place)}
@@ -370,7 +401,8 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
                     )}
                   </div>
                 </div>
-              ))
+              ))}
+              </>
             )
 
           /* 최근 본 식당 리스트 */
@@ -432,8 +464,8 @@ export default function Home({ sidebarOpen, onSidebarClose }) {
             onBoundsChange={setMapBounds}
             flyTo={flyTo}
             selectedRestaurant={selected}
-            onPoiClick={handleKakaoResultClick}
-            onMapBlankClick={() => setSelected(null)}
+            onPoiClick={handleMapPlacesClick}
+            onMapBlankClick={handleMapBlankClick}
           />
         </div>
 
