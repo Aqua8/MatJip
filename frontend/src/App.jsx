@@ -54,6 +54,7 @@ export default function App() {
                 <Home
                   sidebarOpen={sidebarOpen}
                   onSidebarClose={() => setSidebarOpen(false)}
+                  onSidebarOpen={() => setSidebarOpen(true)}
                 />
               }
             />

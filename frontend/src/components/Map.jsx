@@ -27,6 +27,7 @@ export default function Map({ restaurants = [], bookmarkedIds, onMarkerClick, on
   const onBoundsChangeRef = useRef(onBoundsChange);
   const onPoiClickRef = useRef(onPoiClick);
   const onMapBlankClickRef = useRef(onMapBlankClick);
+  const clickSeqRef = useRef(0);
   const bookmarkedIdsRef = useRef(bookmarkedIds);
   useEffect(() => { restaurantsRef.current = restaurants; });
   useEffect(() => { onMarkerClickRef.current = onMarkerClick; });
@@ -141,22 +142,25 @@ export default function Map({ restaurants = [], bookmarkedIds, onMarkerClick, on
           infoOverlayRef.current = null;
 
           if (!onPoiClickRef.current) return;
-          // FD6=음식점, CE7=카페 순서로 검색 (FD6 결과 있으면 CE7 스킵)
+          // 클릭 지점 반경 20m의 음식점(FD6)·카페(CE7)를 모두 모아 거리순으로 넘긴다.
+          // 한 건물에 겹쳐 있는 가게도 목록에서 고를 수 있게 하기 위해 첫 결과만 쓰지 않는다.
+          const clickSeq = ++clickSeqRef.current;
           const opts = { location: mouseEvent.latLng, radius: 20, sort: window.kakao.maps.services.SortBy.DISTANCE };
-          ps.categorySearch('FD6', (results, status) => {
-            if (status === window.kakao.maps.services.Status.OK && results.length > 0) {
-              onPoiClickRef.current?.(results[0]);
-              return;
-            }
-            ps.categorySearch('CE7', (r2, s2) => {
-              if (s2 === window.kakao.maps.services.Status.OK && r2.length > 0) {
-                onPoiClickRef.current?.(r2[0]);
-              } else {
-                // 주변에 식당/카페 없음 → 빈 곳 클릭으로 간주
-                onMapBlankClickRef.current?.();
-              }
+          const search = (code) => new Promise((resolve) => {
+            ps.categorySearch(code, (results, status) => {
+              resolve(status === window.kakao.maps.services.Status.OK ? results : []);
             }, opts);
-          }, opts);
+          });
+          Promise.all([search('FD6'), search('CE7')]).then(([restaurants, cafes]) => {
+            if (clickSeq !== clickSeqRef.current) return; // 그 사이 다른 곳을 다시 클릭했으면 이전 결과는 버림
+            const places = [...restaurants, ...cafes].sort((x, y) => Number(x.distance) - Number(y.distance));
+            if (places.length > 0) {
+              onPoiClickRef.current?.(places);
+            } else {
+              // 주변에 식당/카페 없음 → 빈 곳 클릭으로 간주
+              onMapBlankClickRef.current?.();
+            }
+          });
         });
 
         // 현위치
