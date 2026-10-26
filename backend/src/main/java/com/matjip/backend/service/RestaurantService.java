@@ -24,6 +24,7 @@ public class RestaurantService {
     private final ReviewRepository reviewRepository;
     private final ReviewImageRepository reviewImageRepository;
     private final UserRepository userRepository;
+    private final RestaurantResponseAssembler responseAssembler;
 
     private String thumbnailOf(Long restaurantId) {
         return reviewImageRepository.findFirstByReview_Restaurant_IdOrderByIdDesc(restaurantId)
@@ -35,13 +36,7 @@ public class RestaurantService {
         List<Restaurant> list = (keyword == null || keyword.isBlank())
                 ? restaurantRepository.findAllWithBookmarks()
                 : restaurantRepository.findWithBookmarksByKeyword(keyword);
-        return list.stream()
-                .map(r -> new RestaurantResponse(r,
-                        likeRepository.countByRestaurantId(r.getId()),
-                        reviewRepository.avgRatingByRestaurantId(r.getId()),
-                        false,
-                        thumbnailOf(r.getId())))
-                .collect(Collectors.toList());
+        return responseAssembler.toResponses(list, null);
     }
 
     public RestaurantResponse getById(Long id, String email) {
