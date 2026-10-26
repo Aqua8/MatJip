@@ -21,18 +21,15 @@ public class BookmarkService {
     private final LikeRepository likeRepository;
     private final ReviewRepository reviewRepository;
     private final ReviewImageRepository reviewImageRepository;
+    private final RestaurantResponseAssembler responseAssembler;
 
     @Transactional(readOnly = true)
     public List<RestaurantResponse> getBookmarks(String email) {
         User user = userRepository.findByEmail(email).orElseThrow();
-        return bookmarkRepository.findByUserId(user.getId()).stream()
-                .map(b -> new RestaurantResponse(b.getRestaurant(),
-                        likeRepository.countByRestaurantId(b.getRestaurant().getId()),
-                        reviewRepository.avgRatingByRestaurantId(b.getRestaurant().getId()),
-                        likeRepository.existsByUserIdAndRestaurantId(user.getId(), b.getRestaurant().getId()),
-                        reviewImageRepository.findFirstByReview_Restaurant_IdOrderByIdDesc(b.getRestaurant().getId())
-                                .map(img -> img.getImageUrl()).orElse(null)))
+        List<Restaurant> restaurants = bookmarkRepository.findByUserIdWithRestaurant(user.getId()).stream()
+                .map(Bookmark::getRestaurant)
                 .collect(Collectors.toList());
+        return responseAssembler.toResponses(restaurants, user.getId());
     }
 
     @Transactional
